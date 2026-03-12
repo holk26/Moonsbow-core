@@ -3,7 +3,6 @@ name = "moonsbow-core"
 version = "0.1.0"
 description = "Moonsbow Core Backend"
 authors = ["Moonsbow Team"]
-python = "^3.11"
 
 [tool.poetry.dependencies]
 python = "^3.11"
