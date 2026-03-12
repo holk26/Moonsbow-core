@@ -12,9 +12,6 @@ class TransactionRepository:
         self.db = db
 
     async def create(self, data: dict) -> Transaction:
-        # Map metadata_ alias
-        if "metadata_" in data:
-            data["metadata_"] = data.pop("metadata_")
         tx = Transaction(**data)
         self.db.add(tx)
         await self.db.flush()

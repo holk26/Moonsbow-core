@@ -34,10 +34,10 @@ async def get_menu_item(
 @router.get("/tenant/{tenant_id}/menu", response_model=list[MenuItemResponse])
 async def list_menu(
     tenant_id: uuid.UUID,
-    page: int = 1,
-    size: int = 20,
     db: Annotated[AsyncSession, Depends(get_db)],
     _=Depends(get_current_user),
+    page: int = 1,
+    size: int = 20,
 ):
     service = RestaurantService(db)
     return await service.list_menu(tenant_id=tenant_id, page=page, size=size)

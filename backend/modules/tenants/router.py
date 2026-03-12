@@ -23,10 +23,10 @@ async def create_tenant(
 
 @router.get("/")
 async def list_tenants(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _=Depends(get_current_user),
     page: int = 1,
     size: int = 20,
-    db: Annotated[AsyncSession, Depends(get_db)] = ...,
-    _=Depends(get_current_user),
 ):
     service = TenantService(db)
     return await service.list(page=page, size=size)
