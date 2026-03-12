@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from backend.workers.worker import celery_app
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ def process_analytics(self, tenant_id: str, event_type: str, payload: dict) -> d
             "status": "processed",
             "tenant_id": tenant_id,
             "event_type": event_type,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     except Exception as exc:
         logger.error(f"Analytics processing failed: {exc}")
