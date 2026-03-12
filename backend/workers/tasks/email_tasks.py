@@ -9,6 +9,7 @@ def send_email(self, to: str, subject: str, body: str, html_body: str | None = N
     try:
         logger.info(f"Sending email to {to}: {subject}")
         # TODO: Integrate with actual email provider (SendGrid, SES, etc.)
+        # html_body is reserved for rich HTML email content when provider is integrated
         return {"status": "sent", "to": to, "subject": subject}
     except Exception as exc:
         logger.error(f"Failed to send email to {to}: {exc}")

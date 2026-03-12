@@ -34,10 +34,10 @@ async def get_transaction(
 @router.get("/tenant/{tenant_id}/transactions", response_model=list[TransactionResponse])
 async def list_transactions(
     tenant_id: uuid.UUID,
-    page: int = 1,
-    size: int = 20,
     db: Annotated[AsyncSession, Depends(get_db)],
     _=Depends(get_current_user),
+    page: int = 1,
+    size: int = 20,
 ):
     service = FinanceService(db)
     return await service.list_transactions(tenant_id=tenant_id, page=page, size=size)

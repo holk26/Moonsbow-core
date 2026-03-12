@@ -34,10 +34,10 @@ async def get_course(
 @router.get("/tenant/{tenant_id}/courses", response_model=list[CourseResponse])
 async def list_courses(
     tenant_id: uuid.UUID,
-    page: int = 1,
-    size: int = 20,
     db: Annotated[AsyncSession, Depends(get_db)],
     _=Depends(get_current_user),
+    page: int = 1,
+    size: int = 20,
 ):
     service = LMSService(db)
     return await service.list_courses(tenant_id=tenant_id, page=page, size=size)

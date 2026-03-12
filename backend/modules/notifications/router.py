@@ -35,10 +35,10 @@ async def get_notification(
 async def list_user_notifications(
     user_id: uuid.UUID,
     tenant_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _=Depends(get_current_user),
     page: int = 1,
     size: int = 20,
-    db: Annotated[AsyncSession, Depends(get_db)] = ...,
-    _=Depends(get_current_user),
 ):
     service = NotificationService(db)
     return await service.list_for_user(user_id=user_id, tenant_id=tenant_id, page=page, size=size)

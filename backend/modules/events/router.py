@@ -34,10 +34,10 @@ async def get_event(
 @router.get("/tenant/{tenant_id}", response_model=list[EventResponse])
 async def list_tenant_events(
     tenant_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _=Depends(get_current_user),
     page: int = 1,
     size: int = 20,
-    db: Annotated[AsyncSession, Depends(get_db)] = ...,
-    _=Depends(get_current_user),
 ):
     service = EventService(db)
     return await service.list_by_tenant(tenant_id=tenant_id, page=page, size=size)
