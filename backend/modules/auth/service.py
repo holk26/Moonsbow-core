@@ -60,7 +60,7 @@ class AuthService:
         try:
             payload = decode_token(token)
             user_id = uuid.UUID(payload.get("sub"))
-        except (ValueError, Exception):
+        except Exception:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token",

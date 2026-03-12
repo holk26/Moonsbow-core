@@ -25,7 +25,7 @@ async def create_tenant(
 async def list_tenants(
     page: int = 1,
     size: int = 20,
-    db: Annotated[AsyncSession, Depends(get_db)] = None,
+    db: Annotated[AsyncSession, Depends(get_db)] = ...,
     _=Depends(get_current_user),
 ):
     service = TenantService(db)

@@ -44,6 +44,10 @@ class TenantService:
         if not tenant:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tenant not found")
         updates = data.model_dump(exclude_unset=True)
+        if "slug" in updates and updates["slug"] != tenant.slug:
+            existing = await self.repo.get_by_slug(updates["slug"])
+            if existing:
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Tenant slug already exists")
         tenant = await self.repo.update(tenant, **updates)
         return TenantResponse.model_validate(tenant)
 

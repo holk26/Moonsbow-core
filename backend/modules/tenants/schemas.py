@@ -11,6 +11,7 @@ class TenantCreate(BaseModel):
 
 class TenantUpdate(BaseModel):
     name: str | None = None
+    slug: str | None = None
     plan: str | None = None
     description: str | None = None
     is_active: bool | None = None
