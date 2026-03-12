@@ -1,6 +1,6 @@
 import uuid
 import logging
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.modules.tenants.models import Tenant
 
@@ -20,9 +20,8 @@ class TenantRepository:
         return result.scalar_one_or_none()
 
     async def list(self, offset: int = 0, limit: int = 20) -> tuple[list[Tenant], int]:
-        count_result = await self.db.execute(select(Tenant))
-        all_items = count_result.scalars().all()
-        total = len(all_items)
+        count_result = await self.db.execute(select(func.count()).select_from(Tenant))
+        total = count_result.scalar_one()
         result = await self.db.execute(select(Tenant).offset(offset).limit(limit))
         return list(result.scalars().all()), total
 
