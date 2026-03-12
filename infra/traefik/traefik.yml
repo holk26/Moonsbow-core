@@ -1,3 +1,5 @@
+# WARNING: insecure dashboard is for local development only.
+# In production, remove `insecure: true` and secure with middleware.
 api:
   dashboard: true
   insecure: true
