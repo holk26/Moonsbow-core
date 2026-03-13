@@ -1,5 +1,5 @@
 import uuid
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 
 
 class TransactionCreate(BaseModel):
@@ -9,7 +9,7 @@ class TransactionCreate(BaseModel):
     amount: float
     currency: str = "USD"
     description: str | None = None
-    metadata_: dict | None = Field(None, alias="metadata")
+    transaction_metadata: dict | None = None
     user_id: uuid.UUID | None = None
 
     model_config = ConfigDict(populate_by_name=True)

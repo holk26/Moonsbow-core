@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import List
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -16,9 +17,12 @@ class Settings(BaseSettings):
     APP_DEBUG: bool = True
     APP_PORT: int = 8000
 
-    SECRET_KEY: str = "change-me-in-production"
+    SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     ALGORITHM: str = "HS256"
+
+    # Comma-separated list of allowed CORS origins; defaults to localhost for development
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000"]
 
     DATABASE_URL: str = "postgresql+asyncpg://moonsbow:moonsbow@localhost:5432/moonsbow"
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -27,8 +31,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_secret(self) -> "Settings":
-        if self.APP_ENV == "production" and self.SECRET_KEY == "change-me-in-production":
-            raise ValueError("SECRET_KEY must be changed from the default in production")
+        if self.APP_ENV == "production" and len(self.SECRET_KEY) < 32:
+            raise ValueError("SECRET_KEY must be at least 32 characters long in production")
         return self
 
 
