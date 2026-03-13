@@ -16,6 +16,22 @@ services:
     networks:
       - moonsbow_net
 
+  migrate:
+    image: arigaio/atlas:latest
+    command: >
+      migrate apply
+      --url "${ATLAS_DATABASE_URL}"
+      --dir "file:///migrations"
+      --allow-dirty
+    volumes:
+      - ./migrations:/migrations:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - moonsbow_net
+    restart: "no"
+
   api:
     build:
       context: .
@@ -26,6 +42,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`api.localhost`)"
@@ -46,6 +64,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     networks:
       - moonsbow_net
     restart: unless-stopped
