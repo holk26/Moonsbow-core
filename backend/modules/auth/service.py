@@ -1,8 +1,11 @@
 import logging
+import uuid
 from datetime import timedelta
+
+from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.core.security.jwt import create_access_token
+from backend.core.security.jwt import create_access_token, decode_token
 from backend.core.security.password import hash_password, verify_password
 from backend.core.config.settings import get_settings
 from backend.modules.auth.repository import UserRepository
@@ -20,7 +23,6 @@ class AuthService:
     async def register(self, data: RegisterRequest) -> UserResponse:
         existing = await self.repo.get_by_email(data.email)
         if existing:
-            from fastapi import HTTPException, status
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="User with this email already exists",
@@ -35,7 +37,6 @@ class AuthService:
         return UserResponse.model_validate(user)
 
     async def login(self, data: LoginRequest) -> TokenResponse:
-        from fastapi import HTTPException, status
         user = await self.repo.get_by_email(data.email)
         if not user or not verify_password(data.password, user.password_hash):
             raise HTTPException(
@@ -54,9 +55,6 @@ class AuthService:
         return TokenResponse(access_token=token)
 
     async def verify_token(self, token: str) -> UserResponse:
-        from backend.core.security.jwt import decode_token
-        from fastapi import HTTPException, status
-        import uuid
         try:
             payload = decode_token(token)
             user_id = uuid.UUID(payload.get("sub"))

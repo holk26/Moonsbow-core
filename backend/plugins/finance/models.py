@@ -15,5 +15,5 @@ class Transaction(BaseModel):
     currency: Mapped[str] = mapped_column(String(10), default="USD", nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata_: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
+    transaction_metadata: Mapped[dict | None] = mapped_column("metadata", JSON, nullable=True)
     user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
