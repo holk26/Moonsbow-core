@@ -9,7 +9,7 @@ python = "^3.11"
 fastapi = "^0.111.0"
 uvicorn = {extras = ["standard"], version = "^0.30.0"}
 sqlalchemy = {extras = ["asyncio"], version = "^2.0.0"}
-alembic = "^1.13.0"
+atlas-provider-sqlalchemy = "^0.5.0"
 asyncpg = "^0.29.0"
 psycopg2-binary = "^2.9.9"
 pydantic = {extras = ["email"], version = "^2.7.0"}
@@ -27,6 +27,7 @@ structlog = "^24.1.0"
 pytest = "^8.2.0"
 pytest-asyncio = "^0.23.0"
 httpx = "^0.27.0"
+aiosqlite = "^0.20.0"
 black = "^24.4.0"
 ruff = "^0.4.0"
 
