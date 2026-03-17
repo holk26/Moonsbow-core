@@ -1,3 +1,11 @@
+######################################################################
+# LOCAL DEVELOPMENT ONLY
+#
+# This file is provided for running the full stack on your laptop.
+# For production use Dokploy: deploy the image built from the single
+# Dockerfile and connect it to external PostgreSQL and Redis services
+# via a shared Docker network.  See DEPLOYMENT.md for details.
+######################################################################
 version: "3.9"
 
 services:
@@ -16,34 +24,24 @@ services:
     networks:
       - moonsbow_net
 
-  migrate:
-    image: arigaio/atlas:latest
-    command: >
-      migrate apply
-      --url "${ATLAS_DATABASE_URL}"
-      --dir "file:///migrations"
-      --allow-dirty
-    volumes:
-      - ./migrations:/migrations:ro
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - moonsbow_net
-    restart: "no"
-
   api:
     build:
       context: .
       dockerfile: Dockerfile
     env_file: .env
+    environment:
+      APP_MODE: api
+      APP_ENV: development
+      DATABASE_URL: postgresql+asyncpg://moonsbow:moonsbow@postgres:5432/moonsbow
+      ATLAS_DATABASE_URL: postgresql://moonsbow:moonsbow@postgres:5432/moonsbow
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`api.localhost`)"
@@ -57,15 +55,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ["celery", "-A", "backend.workers.worker", "worker", "--loglevel=info", "--concurrency=4"]
+    environment:
+      APP_MODE: worker
+      DATABASE_URL: postgresql+asyncpg://moonsbow:moonsbow@postgres:5432/moonsbow
+      ATLAS_DATABASE_URL: postgresql://moonsbow:moonsbow@postgres:5432/moonsbow
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
     env_file: .env
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     networks:
       - moonsbow_net
     restart: unless-stopped
