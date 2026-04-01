@@ -9,9 +9,10 @@ set -e
 APP_MODE="${APP_MODE:-api}"
 
 # ---------------------------------------------------------------------------
-# wait_for_postgres — retry until PostgreSQL accepts a connection.
-# Uses Python + psycopg2 (always present in the container image) so no
-# extra OS packages are required.
+# wait_for_postgres — retry until the PostgreSQL *server* accepts connections.
+# Connects to the default "postgres" database (not the app DB) so that the
+# check succeeds even before the application database has been created.
+# Uses Python + psycopg2 (always present in the container image).
 # Usage: wait_for_postgres <postgresql-url>
 # ---------------------------------------------------------------------------
 wait_for_postgres() {
@@ -19,27 +20,67 @@ wait_for_postgres() {
   local retries="${WAIT_DB_RETRIES:-60}"
   local delay="${WAIT_DB_DELAY:-2}"
 
-  echo "==> Waiting for PostgreSQL to be ready (max ${retries} attempts, ${delay}s delay)..."
+  echo "==> Waiting for PostgreSQL server to be ready (max ${retries} attempts, ${delay}s delay)..."
   for i in $(seq 1 "${retries}"); do
     if PGURL="${url}" python3 -c "
 import sys, os
 try:
     import psycopg2
-    conn = psycopg2.connect(os.environ['PGURL'], connect_timeout=2)
+    from urllib.parse import urlparse, urlunparse
+    u = urlparse(os.environ['PGURL'])
+    # Connect to the default 'postgres' admin DB so the check works even
+    # before the application database has been created.
+    server_url = urlunparse(u._replace(path='/postgres'))
+    conn = psycopg2.connect(server_url, connect_timeout=2)
     conn.close()
     sys.exit(0)
 except Exception:
     sys.exit(1)
 " 2>/dev/null; then
-      echo "==> PostgreSQL is ready."
+      echo "==> PostgreSQL server is ready."
       return 0
     fi
     echo "    attempt ${i}/${retries} — not ready yet, retrying in ${delay}s..."
     sleep "${delay}"
   done
 
-  echo "ERROR: PostgreSQL did not become ready after ${retries} attempts." >&2
+  echo "ERROR: PostgreSQL server did not become ready after ${retries} attempts." >&2
   exit 1
+}
+
+# ---------------------------------------------------------------------------
+# ensure_database_exists — create the application database if it doesn't
+# exist yet.  Connects to the "postgres" admin database and issues
+# CREATE DATABASE only when the target DB is absent.
+# Usage: ensure_database_exists <postgresql-url>
+# ---------------------------------------------------------------------------
+ensure_database_exists() {
+  local url="${1}"
+
+  PGURL="${url}" python3 -c "
+import sys, os
+try:
+    import psycopg2
+    from urllib.parse import urlparse, urlunparse
+    u = urlparse(os.environ['PGURL'])
+    dbname = u.path.lstrip('/')
+    server_url = urlunparse(u._replace(path='/postgres'))
+    conn = psycopg2.connect(server_url, connect_timeout=5)
+    conn.autocommit = True
+    cur = conn.cursor()
+    cur.execute('SELECT 1 FROM pg_database WHERE datname = %s', (dbname,))
+    if not cur.fetchone():
+        cur.execute('CREATE DATABASE \"' + dbname + '\"')
+        print('==> Database \"' + dbname + '\" created.')
+    else:
+        print('==> Database \"' + dbname + '\" already exists.')
+    cur.close()
+    conn.close()
+    sys.exit(0)
+except Exception as e:
+    print('ERROR: could not ensure database exists: ' + str(e), file=sys.stderr)
+    sys.exit(1)
+"
 }
 
 # ---------------------------------------------------------------------------
@@ -107,6 +148,7 @@ case "$APP_MODE" in
     # ---- Validate database connection before running migrations -----------
     if [ -n "${ATLAS_DATABASE_URL:-}" ]; then
       wait_for_postgres "${ATLAS_DATABASE_URL}"
+      ensure_database_exists "${ATLAS_DATABASE_URL}"
     else
       echo "WARNING: ATLAS_DATABASE_URL is not set; skipping database readiness check." >&2
     fi
