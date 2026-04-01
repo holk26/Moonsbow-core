@@ -103,8 +103,15 @@ UVICORN_WORKERS=1
 ```
 
 On every deployment the container will:
-1. Run `atlas migrate apply` to apply any pending DB migrations.
-2. Start the FastAPI server with Uvicorn.
+1. Wait for PostgreSQL to accept connections (up to 30 retries × 2 s).
+2. Run `atlas migrate apply` to apply any pending DB migrations.
+3. Wait for Redis to accept connections (up to 30 retries × 2 s).
+4. Start the FastAPI server with Uvicorn.
+
+**Health probe** — configure Dokploy's health check (or your load balancer) to hit `GET /api/v1/health`.  
+The endpoint returns `200 OK` when both PostgreSQL and Redis are reachable, or `503 Service Unavailable` (with `"status": "degraded"`) when one or more dependencies are down.
+
+> **Troubleshooting Bad Gateway**: if the reverse proxy returns 502/504, check the container logs for `ERROR: PostgreSQL … did not become ready` or `ERROR: Redis … did not become ready`. This means the dependency containers are not on the same Docker network or their hostnames differ from the values in `DATABASE_URL` / `REDIS_URL`.  Verify that all services share the `moonsbow_net` network and that the hostnames in the environment variables match the **service aliases** you set in steps 2 and 3.
 
 ---
 
@@ -170,4 +177,4 @@ cp .env.example .env
 docker compose up --build
 ```
 
-This starts Traefik (reverse proxy), the API, the worker, Postgres, and Redis all on the same local bridge network.
+This starts the API, the worker, Postgres, and Redis all on the same local bridge network. The API is accessible at `http://localhost:8000`.
