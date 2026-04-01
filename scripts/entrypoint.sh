@@ -10,19 +10,27 @@ APP_MODE="${APP_MODE:-api}"
 
 # ---------------------------------------------------------------------------
 # wait_for_postgres — retry until PostgreSQL accepts a connection.
-# Uses pg_isready (shipped with libpq-dev) so no extra tooling is required.
-# Usage: wait_for_postgres <host> <port> <user>
+# Uses Python + psycopg2 (always present in the container image) so no
+# extra OS packages are required.
+# Usage: wait_for_postgres <postgresql-url>
 # ---------------------------------------------------------------------------
 wait_for_postgres() {
-  local host="${1}"
-  local port="${2:-5432}"
-  local user="${3:-postgres}"
-  local retries="${WAIT_DB_RETRIES:-30}"
+  local url="${1}"
+  local retries="${WAIT_DB_RETRIES:-60}"
   local delay="${WAIT_DB_DELAY:-2}"
 
-  echo "==> Waiting for PostgreSQL at ${host}:${port} (max ${retries} attempts)..."
+  echo "==> Waiting for PostgreSQL to be ready (max ${retries} attempts, ${delay}s delay)..."
   for i in $(seq 1 "${retries}"); do
-    if pg_isready -h "${host}" -p "${port}" -U "${user}" -q; then
+    if PGURL="${url}" python3 -c "
+import sys, os
+try:
+    import psycopg2
+    conn = psycopg2.connect(os.environ['PGURL'], connect_timeout=2)
+    conn.close()
+    sys.exit(0)
+except Exception:
+    sys.exit(1)
+" 2>/dev/null; then
       echo "==> PostgreSQL is ready."
       return 0
     fi
@@ -30,23 +38,22 @@ wait_for_postgres() {
     sleep "${delay}"
   done
 
-  echo "ERROR: PostgreSQL at ${host}:${port} did not become ready in time." >&2
+  echo "ERROR: PostgreSQL did not become ready after ${retries} attempts." >&2
   exit 1
 }
 
 # ---------------------------------------------------------------------------
 # wait_for_redis — retry until Redis responds to PING.
-# Uses a Python one-liner (Python is always available in the container) so
-# we can verify the actual +PONG response rather than only the TCP connection.
+# Uses a Python socket one-liner to verify the actual +PONG response.
 # Usage: wait_for_redis <host> <port>
 # ---------------------------------------------------------------------------
 wait_for_redis() {
   local host="${1}"
   local port="${2:-6379}"
-  local retries="${WAIT_REDIS_RETRIES:-30}"
+  local retries="${WAIT_REDIS_RETRIES:-60}"
   local delay="${WAIT_REDIS_DELAY:-2}"
 
-  echo "==> Waiting for Redis at ${host}:${port} (max ${retries} attempts)..."
+  echo "==> Waiting for Redis at ${host}:${port} (max ${retries} attempts, ${delay}s delay)..."
   for i in $(seq 1 "${retries}"); do
     if REDIS_HOST="${host}" REDIS_PORT="${port}" python3 -c "
 import socket, sys, os
@@ -66,13 +73,12 @@ except Exception:
     sleep "${delay}"
   done
 
-  echo "ERROR: Redis at ${host}:${port} did not become ready in time." >&2
+  echo "ERROR: Redis at ${host}:${port} did not become ready after ${retries} attempts." >&2
   exit 1
 }
 
 # ---------------------------------------------------------------------------
 # Parse host/port from a URL of the form:
-#   postgresql[+driver]://user:pass@host:port/db
 #   redis://host:port/db
 # ---------------------------------------------------------------------------
 parse_host_port() {
@@ -99,14 +105,8 @@ parse_host_port() {
 case "$APP_MODE" in
   api)
     # ---- Validate database connection before running migrations -----------
-    DB_HOST_PORT=$(parse_host_port "${ATLAS_DATABASE_URL:-}" "5432")
-    DB_HOST=$(echo "${DB_HOST_PORT}" | cut -d' ' -f1)
-    DB_PORT=$(echo "${DB_HOST_PORT}" | cut -d' ' -f2)
-    # Extract username from the URL (between :// and :password)
-    DB_USER=$(echo "${ATLAS_DATABASE_URL:-postgres}" | sed 's|.*://||;s|:.*||')
-
-    if [ -n "${DB_HOST}" ]; then
-      wait_for_postgres "${DB_HOST}" "${DB_PORT}" "${DB_USER}"
+    if [ -n "${ATLAS_DATABASE_URL:-}" ]; then
+      wait_for_postgres "${ATLAS_DATABASE_URL}"
     else
       echo "WARNING: ATLAS_DATABASE_URL is not set; skipping database readiness check." >&2
     fi
