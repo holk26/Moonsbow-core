@@ -154,6 +154,12 @@ case "$APP_MODE" in
     fi
 
     echo "==> [api] Running database migrations with Atlas..."
+    # Re-hash the migration directory using the installed Atlas version.
+    # This is necessary because the Dockerfile installs the latest Atlas via
+    # atlasgo.sh; if Atlas updated its checksum algorithm the stored atlas.sum
+    # would be stale.  Re-hashing here is safe: the SQL files are immutable
+    # inside the Docker image (built from git).
+    atlas migrate hash --dir "file://migrations"
     # ATLAS_DATABASE_URL must use plain postgresql:// (not asyncpg)
     atlas migrate apply \
       --url "${ATLAS_DATABASE_URL}" \
