@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from sqlalchemy import text
 
 from backend.core.database.session import AsyncSessionLocal
@@ -11,7 +11,7 @@ settings = get_settings()
 
 
 @router.get("/health")
-async def health_check():
+async def health_check(response: Response):
     db_status = "ok"
     redis_status = "ok"
 
@@ -26,7 +26,7 @@ async def health_check():
     # Check redis
     try:
         import redis.asyncio as aioredis
-        r = aioredis.from_url(settings.REDIS_URL)
+        r = aioredis.from_url(settings.REDIS_URL, socket_connect_timeout=5)
         await r.ping()
         await r.aclose()
     except Exception as e:
@@ -34,6 +34,9 @@ async def health_check():
         redis_status = "error"
 
     overall = "ok" if db_status == "ok" and redis_status == "ok" else "degraded"
+
+    if overall != "ok":
+        response.status_code = 503
 
     return {
         "status": overall,
