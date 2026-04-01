@@ -177,4 +177,4 @@ cp .env.example .env
 docker compose up --build
 ```
 
-This starts Traefik (reverse proxy), the API, the worker, Postgres, and Redis all on the same local bridge network.
+This starts the API, the worker, Postgres, and Redis all on the same local bridge network. The API is accessible at `http://localhost:8000`.
