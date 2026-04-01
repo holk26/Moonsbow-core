@@ -73,12 +73,14 @@ async def lifespan(app: FastAPI):
             "Check DATABASE_URL and ensure PostgreSQL is running and accessible."
         )
     if not redis_ok:
-        logger.critical(
+        logger.warning(
             "REDIS is not reachable at startup. "
-            "Check REDIS_URL and ensure Redis is running and accessible."
+            "Background tasks (Celery) will fail; the API will still serve requests."
         )
     if db_ok and redis_ok:
         logger.info("Startup connection checks passed: database=ok, redis=ok")
+    elif db_ok:
+        logger.info("Startup connection checks: database=ok, redis=unavailable (non-fatal)")
 
     yield
 
