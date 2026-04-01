@@ -172,7 +172,10 @@ case "$APP_MODE" in
     REDIS_PORT=$(echo "${REDIS_HOST_PORT}" | cut -d' ' -f2)
 
     if [ -n "${REDIS_HOST}" ]; then
-      wait_for_redis "${REDIS_HOST}" "${REDIS_PORT}"
+      # Redis is used for background tasks (Celery). The API can still serve
+      # requests without it, so treat Redis unavailability as a warning only.
+      wait_for_redis "${REDIS_HOST}" "${REDIS_PORT}" || \
+        echo "WARNING: Redis not available — background tasks will fail but the API will start." >&2
     else
       echo "WARNING: REDIS_URL is not set; skipping Redis readiness check." >&2
     fi
