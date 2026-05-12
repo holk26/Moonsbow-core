@@ -21,20 +21,29 @@ class AuthService:
         self.repo = UserRepository(db)
 
     async def register(self, data: RegisterRequest) -> UserResponse:
-        existing = await self.repo.get_by_email(data.email)
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="User with this email already exists",
+        try:
+            existing = await self.repo.get_by_email(data.email)
+            if existing:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="User with this email already exists",
+                )
+            hashed = hash_password(data.password)
+            user = await self.repo.create(
+                email=data.email,
+                password_hash=hashed,
+                full_name=data.full_name,
+                tenant_id=data.tenant_id,
             )
-        hashed = hash_password(data.password)
-        user = await self.repo.create(
-            email=data.email,
-            password_hash=hashed,
-            full_name=data.full_name,
-            tenant_id=data.tenant_id,
-        )
-        return UserResponse.model_validate(user)
+            return UserResponse.model_validate(user)
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Registration error: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Registration failed: {str(e)}",
+            )
 
     async def login(self, data: LoginRequest) -> TokenResponse:
         user = await self.repo.get_by_email(data.email)
