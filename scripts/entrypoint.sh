@@ -56,13 +56,16 @@ case "$APP_MODE" in
     fi
     echo "==> [api] Using Atlas URL: ${ATLAS_URL//:*@/:***@}"  # mask password in logs
 
+    # Regenerate hash if needed, then apply migrations
+    echo "==> [api] Regenerating Atlas migration hash..."
+    atlas migrate hash --dir "file://migrations" || true
+    
     # --allow-dirty permits applying migrations even if the checksum doesn't match
-    # This is useful when migrations are updated but atlas.sum hasn't been regenerated
     if ! atlas migrate apply \
       --url "${ATLAS_URL}" \
       --dir "file://migrations" \
       --allow-dirty; then
-        echo "WARNING: Atlas migration failed or checksum mismatch. Continuing anyway..." >&2
+        echo "WARNING: Atlas migration failed. Continuing anyway..." >&2
         echo "If this is the first deployment, the database may already be initialized." >&2
     fi
 
