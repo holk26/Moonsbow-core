@@ -23,8 +23,8 @@ def create_app() -> FastAPI:
         version="0.1.0",
         description="Moonsbow Core Backend API",
         lifespan=lifespan,
-        docs_url="/docs" if settings.APP_DEBUG else None,
-        redoc_url="/redoc" if settings.APP_DEBUG else None,
+        docs_url="/docs",
+        redoc_url="/redoc",
     )
 
     app.add_middleware(
