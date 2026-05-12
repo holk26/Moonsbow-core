@@ -65,3 +65,4 @@ EXPOSE 8000
 ENV APP_MODE=api
 
 ENTRYPOINT ["bash", "scripts/entrypoint.sh"]
+# Force rebuild Tue 12 May 2026 01:12:53 PDT
