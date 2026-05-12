@@ -8,6 +8,15 @@ set -e
 
 APP_MODE="${APP_MODE:-api}"
 
+# Show version info
+echo "==> Moonsbow Core Build Info"
+if [ -f /app/VERSION ]; then
+    cat /app/VERSION
+fi
+echo "==> Git commit: $(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')"
+echo "==> Checking password.py content:"
+grep -n "plain\[:71\]" /app/backend/core/security/password.py || echo "WARNING: plain[:71] NOT FOUND in password.py"
+
 # Validate required environment variables
 validate_env() {
     local missing=()
