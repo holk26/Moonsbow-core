@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_DEBUG: bool = True
     APP_PORT: int = 8000
+    ENABLE_DOCS: bool = False
 
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
