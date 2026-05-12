@@ -44,10 +44,22 @@ case "$APP_MODE" in
     
     echo "==> [api] Running database migrations with Atlas..."
     # ATLAS_DATABASE_URL must use plain postgresql:// (not asyncpg)
+    # Append sslmode=disable if not present (Dokploy internal Postgres typically has no SSL)
+    ATLAS_URL="${ATLAS_DATABASE_URL}"
+    if [[ "${ATLAS_URL}" != *"sslmode="* ]]; then
+        # Add ?sslmode=disable or &sslmode=disable depending on existing query params
+        if [[ "${ATLAS_URL}" == *"?"* ]]; then
+            ATLAS_URL="${ATLAS_URL}&sslmode=disable"
+        else
+            ATLAS_URL="${ATLAS_URL}?sslmode=disable"
+        fi
+    fi
+    echo "==> [api] Using Atlas URL: ${ATLAS_URL//:*@/:***@}"  # mask password in logs
+
     # --allow-dirty permits applying migrations even if the checksum doesn't match
     # This is useful when migrations are updated but atlas.sum hasn't been regenerated
     if ! atlas migrate apply \
-      --url "${ATLAS_DATABASE_URL}" \
+      --url "${ATLAS_URL}" \
       --dir "file://migrations" \
       --allow-dirty; then
         echo "WARNING: Atlas migration failed or checksum mismatch. Continuing anyway..." >&2
