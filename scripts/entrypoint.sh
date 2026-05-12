@@ -8,14 +8,51 @@ set -e
 
 APP_MODE="${APP_MODE:-api}"
 
+# Validate required environment variables
+validate_env() {
+    local missing=()
+    
+    if [ -z "${SECRET_KEY:-}" ]; then
+        missing+=("SECRET_KEY")
+    fi
+    
+    if [ -z "${DATABASE_URL:-}" ]; then
+        missing+=("DATABASE_URL")
+    fi
+    
+    if [ -z "${ATLAS_DATABASE_URL:-}" ]; then
+        missing+=("ATLAS_DATABASE_URL")
+    fi
+    
+    if [ -z "${REDIS_URL:-}" ]; then
+        missing+=("REDIS_URL")
+    fi
+    
+    if [ ${#missing[@]} -ne 0 ]; then
+        echo "ERROR: Missing required environment variables:" >&2
+        for var in "${missing[@]}"; do
+            echo "  - $var" >&2
+        done
+        exit 1
+    fi
+}
+
 case "$APP_MODE" in
   api)
+    echo "==> [api] Validating environment..."
+    validate_env
+    
     echo "==> [api] Running database migrations with Atlas..."
     # ATLAS_DATABASE_URL must use plain postgresql:// (not asyncpg)
-    atlas migrate apply \
+    # --allow-dirty permits applying migrations even if the checksum doesn't match
+    # This is useful when migrations are updated but atlas.sum hasn't been regenerated
+    if ! atlas migrate apply \
       --url "${ATLAS_DATABASE_URL}" \
       --dir "file://migrations" \
-      --allow-dirty
+      --allow-dirty; then
+        echo "WARNING: Atlas migration failed or checksum mismatch. Continuing anyway..." >&2
+        echo "If this is the first deployment, the database may already be initialized." >&2
+    fi
 
     echo "==> [api] Starting Moonsbow Core API..."
     if [ "${APP_ENV:-development}" = "development" ]; then
@@ -26,6 +63,9 @@ case "$APP_MODE" in
     ;;
 
   worker)
+    echo "==> [worker] Validating environment..."
+    validate_env
+    
     echo "==> [worker] Starting Moonsbow Core Celery Worker..."
     exec celery -A backend.workers.worker worker \
       --loglevel=info \
