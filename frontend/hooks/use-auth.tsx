@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("access_token", data.access_token);
     const me = await api.me();
     setUser(me as User);
-    window.location.href = "/dashboard/";
+    window.location.href = "/tenants/";
   };
 
   const register = async (email: string, password: string, full_name?: string) => {
