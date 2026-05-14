@@ -50,6 +50,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
+# Force cache invalidation - Build ID: 2026-05-12-02-40-00
+ARG BUILD_ID=2026-05-12-02-40-00
+RUN echo "Build ID: ${BUILD_ID}"
+
 # Copy application code
 COPY . .
 
@@ -65,4 +69,3 @@ EXPOSE 8000
 ENV APP_MODE=api
 
 ENTRYPOINT ["bash", "scripts/entrypoint.sh"]
-# Force rebuild Tue 12 May 2026 01:12:53 PDT
