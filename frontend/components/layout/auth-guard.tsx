@@ -10,8 +10,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!isLoading && !user && pathname !== "/login" && pathname !== "/register") {
-      router.push("/login");
+    if (!isLoading && !user && pathname !== "/login/" && pathname !== "/register/") {
+      window.location.href = "/login/";
     }
   }, [user, isLoading, router, pathname]);
 
@@ -23,7 +23,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user && pathname !== "/login" && pathname !== "/register") {
+  if (!user && pathname !== "/login/" && pathname !== "/register/") {
     return null;
   }
 

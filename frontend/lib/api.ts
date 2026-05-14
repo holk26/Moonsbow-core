@@ -22,6 +22,7 @@ async function fetchApi<T>(
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers,
+    redirect: "follow",
   });
 
   if (res.status === 401) {
