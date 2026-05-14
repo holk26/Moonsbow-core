@@ -23,18 +23,18 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/tenants", label: "Tenants", icon: Building2 },
-  { href: "/billing", label: "Billing", icon: CreditCard },
-  { href: "/users", label: "Usuarios", icon: Users },
-  { href: "/notifications", label: "Notificaciones", icon: Bell },
-  { href: "/events", label: "Eventos", icon: CalendarDays },
+  { href: "/tenants/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/tenants/", label: "Tenants", icon: Building2 },
+  { href: "/billing/", label: "Billing", icon: CreditCard },
+  { href: "/users/", label: "Usuarios", icon: Users },
+  { href: "/notifications/", label: "Notificaciones", icon: Bell },
+  { href: "/events/", label: "Eventos", icon: CalendarDays },
 ];
 
 const pluginItems = [
-  { href: "/plugins/lms", label: "LMS", icon: BookOpen },
-  { href: "/plugins/restaurant", label: "Restaurant", icon: UtensilsCrossed },
-  { href: "/plugins/finance", label: "Finance", icon: Landmark },
+  { href: "/plugins/lms/", label: "LMS", icon: BookOpen },
+  { href: "/plugins/restaurant/", label: "Restaurant", icon: UtensilsCrossed },
+  { href: "/plugins/finance/", label: "Finance", icon: Landmark },
 ];
 
 export function Sidebar() {
@@ -48,7 +48,7 @@ export function Sidebar() {
       onClick={() => setOpen(false)}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-        pathname === href
+        pathname === href || pathname === href.slice(0, -1)
           ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:bg-muted hover:text-foreground"
       )}
