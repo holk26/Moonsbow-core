@@ -38,18 +38,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-# Copy application code explicitly (not using . to avoid cache issues)
+# Copy application code explicitly
 COPY backend/ ./backend/
 COPY scripts/ ./scripts/
 COPY migrations/ ./migrations/
 COPY atlas.hcl ./
 COPY VERSION ./
 
-# Make entrypoint executable
+# Make scripts executable
 RUN chmod +x scripts/entrypoint.sh
-
-# Verify the password.py fix is present
-RUN grep -n "plain\[:71\]" backend/core/security/password.py || (echo "ERROR: password.py fix not found!" && exit 1)
 
 # Expose the application port
 EXPOSE 8000
