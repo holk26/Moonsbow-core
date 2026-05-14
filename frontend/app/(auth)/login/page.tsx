@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import Link from "next/link";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -32,7 +31,9 @@ export default function LoginPage() {
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold">Moonsbow Admin</CardTitle>
-        <CardDescription>Inicia sesión en tu cuenta</CardDescription>
+        <CardDescription>
+          Panel de administración de la plataforma
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -65,11 +66,8 @@ export default function LoginPage() {
             {loading ? "Iniciando sesión..." : "Iniciar sesión"}
           </Button>
         </form>
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          ¿No tienes cuenta?{" "}
-          <Link href="/register" className="text-primary hover:underline">
-            Regístrate
-          </Link>
+        <p className="mt-4 text-center text-xs text-muted-foreground">
+          Acceso restringido a administradores autorizados.
         </p>
       </CardContent>
     </Card>
