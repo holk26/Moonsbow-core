@@ -42,7 +42,7 @@ class AuthService:
             logger.error(f"Registration error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Registration failed: {str(e)}",
+                detail=f"REGISTRATION_ERROR_V2: {str(e)}",
             )
 
     async def login(self, data: LoginRequest) -> TokenResponse:
