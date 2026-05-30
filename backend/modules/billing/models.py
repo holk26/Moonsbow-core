@@ -10,6 +10,7 @@ class Subscription(BaseModel):
     __tablename__ = "subscriptions"
 
     tenant_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    app_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     plan: Mapped[str] = mapped_column(String(50), nullable=False, default="free")
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="active")
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
