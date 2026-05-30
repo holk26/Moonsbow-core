@@ -35,6 +35,16 @@ class AuthService:
                 full_name=data.full_name,
                 tenant_id=data.tenant_id,
             )
+            
+            # Emit event
+            from backend.core.events.dispatcher import get_dispatcher
+            dispatcher = get_dispatcher()
+            await dispatcher.publish(
+                "user.created",
+                payload={"user_id": str(user.id), "email": user.email, "tenant_id": str(data.tenant_id) if data.tenant_id else None},
+                app_id=None,
+            )
+            
             return UserResponse.model_validate(user)
         except HTTPException:
             raise
