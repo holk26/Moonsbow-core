@@ -11,6 +11,7 @@ celery_app = Celery(
         "backend.workers.tasks.email_tasks",
         "backend.workers.tasks.analytics_tasks",
         "backend.workers.tasks.ai_tasks",
+        "backend.modules.webhooks.tasks",
     ],
 )
 

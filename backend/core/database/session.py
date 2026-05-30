@@ -52,5 +52,6 @@ async def init_db() -> None:
     import backend.modules.events.models  # noqa: F401
     import backend.modules.notifications.models  # noqa: F401
     import backend.modules.apps.models  # noqa: F401
+    import backend.modules.webhooks.models  # noqa: F401
 
     logger.info("Database initialized")

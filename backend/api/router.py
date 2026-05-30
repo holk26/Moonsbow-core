@@ -7,6 +7,7 @@ from backend.modules.billing.router import router as billing_router
 from backend.modules.events.router import router as events_router
 from backend.modules.notifications.router import router as notifications_router
 from backend.modules.apps.router import router as apps_router
+from backend.modules.webhooks.router import router as webhooks_router
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -17,3 +18,4 @@ api_router.include_router(billing_router)
 api_router.include_router(events_router)
 api_router.include_router(notifications_router)
 api_router.include_router(apps_router)
+api_router.include_router(webhooks_router)
