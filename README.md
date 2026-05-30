@@ -1,48 +1,45 @@
 # Moonsbow-core
 
+Moonsbow Core is a centralized SaaS toolkit that provides essential reusable infrastructure — authentication, app management, billing, notifications, and webhooks — to other applications within the same organization.
 
-Moonsbow Core is a modular, multi-tenant backend platform designed to power multiple SaaS products from a single codebase.
+Built with FastAPI, PostgreSQL, and Redis, it serves as the backbone for multiple internal SaaS products by centralizing common concerns so each application can focus on its unique domain.
 
-Built with FastAPI, PostgreSQL, and Redis, it provides the foundational infrastructure required to rapidly build and scale software platforms such as LMS systems, restaurant management tools, financial applications, and other vertical SaaS products.
+## Key Features
 
-The architecture separates core infrastructure, platform modules, and product plugins, enabling teams to develop independent features while maintaining a stable and scalable foundation.
+- **Authentication & user management** — JWT-based auth with registration and login
+- **App registration** — Each consuming app registers and receives an API Key
+- **Service-to-service auth** — API Key authentication via `X-API-Key` header
+- **Billing & subscriptions** — CRUD for subscriptions and plans
+- **Event system with webhooks** — Apps subscribe to events and receive signed webhook deliveries
+- **Multi-tenant architecture** — Tenant isolation at the application layer
+- **Background workers** — Celery tasks for email, analytics, and webhook delivery
+- **Schema migrations** — Managed with Atlas
+- **Containerized deployment** — Docker and Docker Compose support
 
-Key Features
+## Architecture Overview
 
-- Multi-tenant architecture for serving multiple organizations
-- Plugin-based system for building independent SaaS products
-- Modular domain design separating infrastructure and business logic
-- Event-driven architecture for automation and workflows
-- Scalable API powered by FastAPI
-- Secure authentication and tenant management
-- Worker system for background processing
-- Schema migrations managed with Atlas
-- Containerized deployment with Docker
+```
+┌─────────────────┐     API REST      ┌──────────────────────────┐
+│   App Comidas   │◄─────────────────►│                          │
+│   (tu SaaS)     │                   │    Moonsbow Core         │
+└─────────────────┘                   │    ┌─────────────────┐   │
+        ▲                             │    │  Auth           │   │
+        │ Webhooks                    │    │  Apps           │   │
+        └─────────────────────────────┤    │  Tenants        │   │
+                                      │    │  Billing        │   │
+┌─────────────────┐     API REST      │    │  Notifications  │   │
+│   App Gym       │◄─────────────────►│    │  Events         │   │
+│   (tu SaaS)     │                   │    │  Webhooks       │   │
+└─────────────────┘                   │    └─────────────────┘   │
+        ▲                             │                          │
+        │ Webhooks                    └──────────────────────────┘
+        └──────────────────────────────────────────────────────────┘
+```
 
-Architecture Overview
+## Project Goal
 
-Internet
-   │
-Reverse Proxy
-   │
-Moonsbow Core API
-   │
-Modules
- ├ Auth
- ├ Tenants
- ├ Billing
- ├ Events
- └ Notifications
-   │
-Plugins
- ├ LMS
- ├ Restaurant
- └ Finance
+Moonsbow Core centralizes the common infrastructure required by multiple SaaS products, eliminating duplication and ensuring consistency across authentication, billing, and notifications.
 
-Project Goal
-
-Moonsbow Core aims to function as a SaaS factory, enabling developers to launch multiple scalable products on top of a shared platform while maintaining strong isolation, extensibility, and operational reliability.
-
-License
+## License
 
 MIT

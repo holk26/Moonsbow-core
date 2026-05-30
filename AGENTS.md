@@ -1,17 +1,18 @@
 # Moonsbow Core — Agent Guide
 
-This document contains everything an AI coding agent needs to know to work effectively on the Moonsbow Core codebase. Moonsbow Core is a modular, multi-tenant SaaS platform backend designed to power multiple independent products (LMS, Restaurant management, Finance, etc.) from a single codebase.
+This document contains everything an AI coding agent needs to know to work effectively on the Moonsbow Core codebase. Moonsbow Core is a centralized SaaS toolkit that provides essential reusable infrastructure — authentication, billing, notifications, and webhooks — to other applications within the same organization.
 
 ---
 
 ## Project Overview
 
-Moonsbow Core is a FastAPI-based backend with a Next.js admin dashboard frontend. It provides foundational infrastructure for multi-tenant SaaS products including authentication, tenant management, billing, events, notifications, and plugin-based product features.
+Moonsbow Core is a FastAPI-based backend with a Next.js admin dashboard frontend. It provides foundational infrastructure for SaaS applications including authentication, app registration, billing, events, notifications, and webhooks.
 
-The architecture separates concerns into three layers:
+The architecture separates concerns into two layers:
 - **Core** (`backend/core/`) — Infrastructure (database, security, config, events, utilities)
-- **Modules** (`backend/modules/`) — Platform services shared by all products (auth, tenants, billing, events, notifications)
-- **Plugins** (`backend/plugins/`) — Product-specific features (LMS, restaurant, finance)
+- **Modules** (`backend/modules/`) — Platform services (auth, tenants, billing, events, notifications, apps, webhooks)
+
+Each application that consumes Moonsbow Core registers as an `App` and receives an API Key for service-to-service authentication. Webhooks allow apps to subscribe to events such as `user.created` and `subscription.updated`.
 
 All business data is multi-tenant: every table includes a `tenant_id` column for isolation.
 
@@ -59,29 +60,27 @@ All business data is multi-tenant: every table includes a `tenant_id` column for
 moonsbow-core/
 ├── backend/                  # Python backend
 │   ├── api/                  # API router entrypoints
-│   │   ├── router.py         # Aggregates all module/plugin routers under /api/v1
+│   │   ├── router.py         # Aggregates all module routers under /api/v1
 │   │   └── health.py         # Health check endpoint
 │   ├── app.py                # FastAPI application factory (create_app)
 │   ├── main.py               # Entry point: exports the FastAPI app
 │   ├── core/                 # Infrastructure layer
 │   │   ├── config/           # Settings (Pydantic-Settings) and logging
 │   │   ├── database/         # SQLAlchemy base, session, engine
-│   │   ├── security/         # JWT, password hashing, auth dependencies
-│   │   ├── events/           # In-memory event dispatcher
+│   │   ├── security/         # JWT, password hashing, API Key auth, dependencies
+│   │   ├── events/           # In-memory event dispatcher with webhook integration
 │   │   └── utils/            # Pagination helpers, response wrappers
-│   ├── modules/              # Platform modules (shared by all products)
+│   ├── modules/              # Platform modules
 │   │   ├── auth/             # User registration, login, JWT
 │   │   ├── tenants/          # Organization/tenant CRUD
 │   │   ├── billing/          # Subscriptions and plans
 │   │   ├── events/           # Platform event logging
-│   │   └── notifications/    # User notifications
-│   ├── plugins/              # Product plugins (isolated features)
-│   │   ├── lms/              # Learning Management System
-│   │   ├── restaurant/       # Restaurant management
-│   │   └── finance/          # Financial transactions
+│   │   ├── notifications/    # User notifications
+│   │   ├── apps/             # App registration and API key management
+│   │   └── webhooks/         # Webhook subscriptions and delivery
 │   └── workers/              # Celery worker and tasks
 │       ├── worker.py         # Celery app configuration
-│       └── tasks/            # Background tasks (email, analytics, AI)
+│       └── tasks/            # Background tasks (email, analytics, AI, webhooks)
 ├── frontend/                 # Next.js admin dashboard
 │   ├── app/                  # App Router pages
 │   │   ├── (auth)/           # Login / Register (unauthenticated)
@@ -116,9 +115,9 @@ moonsbow-core/
 └── .env.example              # Required environment variables
 ```
 
-### Module/Plugin Internal Structure
+### Module Internal Structure
 
-Every module and plugin follows the same internal layout:
+Every module follows the same internal layout:
 
 ```
 module_name/
@@ -128,7 +127,7 @@ module_name/
 ├── models.py      # SQLAlchemy ORM models
 ├── schemas.py     # Pydantic request/response models
 ├── repository.py  # Database access layer
-└── events.py      # (plugins only) Event emitters
+└── tasks.py       # (webhooks only) Celery background tasks
 ```
 
 ---
@@ -234,6 +233,7 @@ poetry run pytest -v
 - Use `client: AsyncClient` fixture for API tests
 - Use `db: AsyncSession` fixture for direct database tests
 - Mark async tests with `@pytest.mark.asyncio`
+- New tests for apps and webhooks exist: `tests/test_apps.py`, `tests/test_webhooks.py`
 
 ### Frontend Tests
 There are currently no frontend tests configured. If you add them, place them alongside components or in a `frontend/__tests__/` directory.
@@ -243,9 +243,11 @@ There are currently no frontend tests configured. If you add them, place them al
 ## Security Considerations
 
 ### Authentication
-- **JWT Bearer tokens** using `python-jose` (HS256 algorithm)
+- **JWT Bearer tokens** using `python-jose` (HS256 algorithm) — for human users (dashboard)
+- **API Key authentication** (`X-API-Key` header) — for service-to-service requests from registered apps
 - Passwords hashed with **bcrypt** via `passlib` (truncated at 71 characters due to bcrypt's 72-byte limit)
-- Protected routes use `backend.core.security.dependencies.get_current_user` (HTTPBearer)
+- Protected routes use `backend.core.security.dependencies.get_current_user` (HTTPBearer) for user routes
+- App routes use `backend.core.security.api_key.get_current_app` for machine-to-machine routes
 - `SECRET_KEY` must be at least 32 characters in production (enforced by Pydantic validator)
 
 ### Multi-Tenancy
@@ -328,7 +330,7 @@ Task modules:
 - `backend.workers.tasks.analytics_tasks` — Analytics processing
 - `backend.workers.tasks.ai_tasks` — AI/ML tasks
 
-Invoke tasks from services/plugins using `.delay()` or `.apply_async()`.
+Invoke tasks from services using `.delay()` or `.apply_async()`.
 
 ---
 
@@ -336,9 +338,10 @@ Invoke tasks from services/plugins using `.delay()` or `.apply_async()`.
 
 An in-memory async event dispatcher lives in `backend/core/events/dispatcher.py`.
 
-- Plugins emit events via helper functions in their `events.py`
-- Event types are defined as string constants in `backend/core/events/event_types.py`
+- Services emit events via `dispatcher.publish(event_type, payload, app_id)`
 - Handlers can be registered with `dispatcher.subscribe(event_type, handler)`
+- The dispatcher automatically triggers webhook delivery for active subscriptions
+- Webhooks are delivered asynchronously via Celery tasks with HMAC-SHA256 signing
 - This is **not** a distributed message bus — for cross-process events, use Celery tasks
 
 ---
@@ -356,7 +359,7 @@ An in-memory async event dispatcher lives in `backend/core/events/dispatcher.py`
 
 ## Important Conventions
 
-1. **No plugin depends on another plugin.** They may depend on core and modules, but never on each other.
+1. **No module depends on another module.** They may depend on core, but cross-module dependencies should be minimal.
 2. **All routes are prefixed with `/api/v1`.** Router registration happens in `backend/api/router.py`.
 3. **Database sessions auto-commit/rollback.** The `get_db()` dependency yields a session that commits on success and rolls back on exception.
 4. **UUID primary keys.** All models use `UUID(as_uuid=True)` for `id`.
@@ -370,7 +373,7 @@ An in-memory async event dispatcher lives in `backend/core/events/dispatcher.py`
 | File | Purpose |
 |------|---------|
 | `backend/app.py` | FastAPI factory — add middleware or global exception handlers here |
-| `backend/api/router.py` | Register new module/plugin routers here |
+| `backend/api/router.py` | Register new module routers here |
 | `backend/core/database/session.py` | Import new models in `init_db()` |
 | `backend/core/config/settings.py` | Add new environment variables here |
 | `pyproject.toml` | Python deps, Black/Ruff/pytest config |
