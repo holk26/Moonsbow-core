@@ -10,12 +10,9 @@ import {
   Users,
   Bell,
   CalendarDays,
-  BookOpen,
-  UtensilsCrossed,
-  Landmark,
+  AppWindow,
   LogOut,
   Menu,
-  X,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useState } from "react";
@@ -24,17 +21,12 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/apps/", label: "Aplicaciones", icon: AppWindow },
   { href: "/tenants/", label: "Tenants", icon: Building2 },
   { href: "/billing/", label: "Billing", icon: CreditCard },
   { href: "/users/", label: "Usuarios", icon: Users },
   { href: "/notifications/", label: "Notificaciones", icon: Bell },
   { href: "/events/", label: "Eventos", icon: CalendarDays },
-];
-
-const pluginItems = [
-  { href: "/plugins/lms/", label: "LMS", icon: BookOpen },
-  { href: "/plugins/restaurant/", label: "Restaurant", icon: UtensilsCrossed },
-  { href: "/plugins/finance/", label: "Finance", icon: Landmark },
 ];
 
 export function Sidebar() {
@@ -71,16 +63,6 @@ export function Sidebar() {
           {navItems.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
-        </div>
-        <div>
-          <p className="mb-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Plugins
-          </p>
-          <div className="space-y-1">
-            {pluginItems.map((item) => (
-              <NavLink key={item.href} {...item} />
-            ))}
-          </div>
         </div>
       </div>
       <div className="border-t p-3">
