@@ -7,15 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BookOpen } from "lucide-react";
-
-interface Course {
-  id: string;
-  tenant_id: string;
-  title: string;
-  description: string | null;
-  instructor: string | null;
-  is_active: boolean;
-}
+import type { CourseResponse, TenantResponse } from "@/lib/types";
 
 export default function LMSPage() {
   const [tenantId, setTenantId] = useState("");
@@ -31,8 +23,8 @@ export default function LMSPage() {
     enabled: !!tenantId,
   });
 
-  const courses: Course[] = ((data?.items || []) as unknown as Course[]) || [];
-  const tenantList = (tenants?.items as Array<{ id: string; name: string }>) || [];
+  const courses: CourseResponse[] = data?.items ?? [];
+  const tenantList: TenantResponse[] = (tenants?.items as TenantResponse[]) ?? [];
 
   return (
     <div className="space-y-4">

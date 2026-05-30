@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/hooks/use-auth";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryProvider } from "@/components/react-query-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +33,7 @@ export default function RootLayout({
         <ReactQueryProvider>
           <AuthProvider>
             {children}
+            <Toaster />
           </AuthProvider>
         </ReactQueryProvider>
       </body>

@@ -7,16 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Landmark } from "lucide-react";
-
-interface Transaction {
-  id: string;
-  tenant_id: string;
-  amount: number;
-  currency: string;
-  description: string | null;
-  status: string;
-  created_at: string;
-}
+import type { TransactionResponse, TenantResponse } from "@/lib/types";
 
 export default function FinancePage() {
   const [tenantId, setTenantId] = useState("");
@@ -33,8 +24,8 @@ export default function FinancePage() {
     enabled: !!tenantId,
   });
 
-  const transactions: Transaction[] = ((data?.items || []) as unknown as Transaction[]) || [];
-  const tenantList = (tenants?.items as Array<{ id: string; name: string }>) || [];
+  const transactions: TransactionResponse[] = data?.items ?? [];
+  const tenantList: TenantResponse[] = (tenants?.items as TenantResponse[]) ?? [];
 
   return (
     <div className="space-y-4">

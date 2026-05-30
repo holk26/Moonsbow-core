@@ -6,24 +6,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const loginSchema = z.object({
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const onSubmit = async (data: LoginForm) => {
     setError("");
-    setLoading(true);
     try {
-      await login(email, password);
+      await login(data.email, data.password);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -36,17 +47,18 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="admin@moonsbow.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              {...register("email")}
             />
+            {errors.email && (
+              <p className="text-sm text-red-500">{errors.email.message}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Contraseña</Label>
@@ -54,16 +66,17 @@ export default function LoginPage() {
               id="password"
               type="password"
               placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              {...register("password")}
             />
+            {errors.password && (
+              <p className="text-sm text-red-500">{errors.password.message}</p>
+            )}
           </div>
           {error && (
             <p className="text-sm text-red-500">{error}</p>
           )}
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Iniciando sesión..." : "Iniciar sesión"}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Iniciando sesión..." : "Iniciar sesión"}
           </Button>
         </form>
         <p className="mt-4 text-center text-xs text-muted-foreground">

@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Building2, CreditCard, Users, Bell } from "lucide-react";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Stats {
   tenants: number;
@@ -16,23 +17,19 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<Stats>({ tenants: 0, users: 0, notifications: 0 });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     async function loadStats() {
       try {
         setLoading(true);
-        // Fetch tenants
         const tenantsData = await api.listTenants(1, 1);
-        // For users, we'll count from tenants or use a separate endpoint
-        // Since we don't have a direct users endpoint, we'll show tenants count
         setStats({
           tenants: tenantsData.total || 0,
-          users: 1, // At least the current user
+          users: 1,
           notifications: 0,
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Error cargando datos");
+        toast.error(err instanceof Error ? err.message : "Error cargando datos");
       } finally {
         setLoading(false);
       }
@@ -57,12 +54,6 @@ export default function DashboardPage() {
           Este es el panel de administración de Moonsbow Core.
         </p>
       </div>
-
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
-          {error}
-        </div>
-      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (

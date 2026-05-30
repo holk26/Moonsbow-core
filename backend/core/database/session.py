@@ -51,8 +51,5 @@ async def init_db() -> None:
     import backend.modules.billing.models  # noqa: F401
     import backend.modules.events.models  # noqa: F401
     import backend.modules.notifications.models  # noqa: F401
-    import backend.plugins.lms.models  # noqa: F401
-    import backend.plugins.restaurant.models  # noqa: F401
-    import backend.plugins.finance.models  # noqa: F401
 
     logger.info("Database initialized")

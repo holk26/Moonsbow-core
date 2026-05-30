@@ -7,16 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UtensilsCrossed } from "lucide-react";
-
-interface MenuItem {
-  id: string;
-  tenant_id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  category: string;
-  is_available: boolean;
-}
+import type { MenuItemResponse, TenantResponse } from "@/lib/types";
 
 export default function RestaurantPage() {
   const [tenantId, setTenantId] = useState("");
@@ -28,12 +19,13 @@ export default function RestaurantPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["menu", tenantId],
-    queryFn: () => (tenantId ? api.listMenu(tenantId) : Promise.resolve({ items: [], total: 0 })),
+    queryFn: () =>
+      tenantId ? api.listMenu(tenantId) : Promise.resolve({ items: [], total: 0 }),
     enabled: !!tenantId,
   });
 
-  const items: MenuItem[] = ((data?.items || []) as unknown as MenuItem[]) || [];
-  const tenantList = (tenants?.items as Array<{ id: string; name: string }>) || [];
+  const items: MenuItemResponse[] = data?.items ?? [];
+  const tenantList: TenantResponse[] = (tenants?.items as TenantResponse[]) ?? [];
 
   return (
     <div className="space-y-4">

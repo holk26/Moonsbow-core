@@ -25,21 +25,37 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import type { TenantResponse } from "@/lib/types";
 
-interface Tenant {
-  id: string;
-  name: string;
-  slug: string;
-  plan: string;
-  is_active: boolean;
-  description: string | null;
-}
+const tenantSchema = z.object({
+  name: z.string().min(1, "El nombre es requerido").max(100, "Máximo 100 caracteres"),
+  slug: z.string().min(1, "El slug es requerido")
+    .regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones")
+    .max(50, "Máximo 50 caracteres"),
+  plan: z.string().min(1, "El plan es requerido"),
+  description: z.string().max(500, "Máximo 500 caracteres").optional(),
+});
+
+type TenantForm = z.infer<typeof tenantSchema>;
 
 export default function TenantsPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Tenant | null>(null);
-  const [form, setForm] = useState({ name: "", slug: "", plan: "free", description: "" });
+  const [editing, setEditing] = useState<TenantResponse | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<TenantForm>({
+    resolver: zodResolver(tenantSchema),
+    defaultValues: { name: "", slug: "", plan: "free", description: "" },
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["tenants"],
@@ -50,39 +66,52 @@ export default function TenantsPage() {
     mutationFn: api.createTenant,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
+      toast.success("Tenant creado correctamente");
       setOpen(false);
-      setForm({ name: "", slug: "", plan: "free", description: "" });
+      reset({ name: "", slug: "", plan: "free", description: "" });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Error al crear tenant");
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof api.updateTenant>[1] }) =>
       api.updateTenant(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
+      toast.success("Tenant actualizado correctamente");
       setOpen(false);
       setEditing(null);
-      setForm({ name: "", slug: "", plan: "free", description: "" });
+      reset({ name: "", slug: "", plan: "free", description: "" });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Error al actualizar tenant");
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: api.deleteTenant,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tenants"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tenants"] });
+      toast.success("Tenant eliminado correctamente");
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Error al eliminar tenant");
+    },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = (formData: TenantForm) => {
     if (editing) {
-      updateMutation.mutate({ id: editing.id, data: form });
+      updateMutation.mutate({ id: editing.id, data: formData });
     } else {
-      createMutation.mutate(form);
+      createMutation.mutate(formData);
     }
   };
 
-  const handleEdit = (tenant: Tenant) => {
+  const handleEdit = (tenant: TenantResponse) => {
     setEditing(tenant);
-    setForm({
+    reset({
       name: tenant.name,
       slug: tenant.slug,
       plan: tenant.plan,
@@ -93,11 +122,12 @@ export default function TenantsPage() {
 
   const handleNew = () => {
     setEditing(null);
-    setForm({ name: "", slug: "", plan: "free", description: "" });
+    reset({ name: "", slug: "", plan: "free", description: "" });
     setOpen(true);
   };
 
-  const tenants: Tenant[] = ((data?.items || []) as unknown as Tenant[]) || [];
+  const tenants = data?.items ?? [];
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="space-y-4">
@@ -106,11 +136,13 @@ export default function TenantsPage() {
           <h2 className="text-2xl font-bold tracking-tight">Tenants</h2>
           <p className="text-muted-foreground">Gestiona las organizaciones de la plataforma</p>
         </div>
-        <Button onClick={handleNew}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Tenant
-        </Button>
         <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={handleNew}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nuevo Tenant
+            </Button>
+          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editing ? "Editar Tenant" : "Crear Tenant"}</DialogTitle>
@@ -118,44 +150,49 @@ export default function TenantsPage() {
                 {editing ? "Modifica los datos del tenant" : "Completa los datos para crear un nuevo tenant"}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nombre</Label>
                 <Input
                   id="name"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
+                  {...register("name")}
                 />
+                {errors.name && (
+                  <p className="text-sm text-red-500">{errors.name.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="slug">Slug</Label>
                 <Input
                   id="slug"
-                  value={form.slug}
-                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                  required
+                  {...register("slug")}
                 />
+                {errors.slug && (
+                  <p className="text-sm text-red-500">{errors.slug.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="plan">Plan</Label>
                 <Input
                   id="plan"
-                  value={form.plan}
-                  onChange={(e) => setForm({ ...form, plan: e.target.value })}
-                  required
+                  {...register("plan")}
                 />
+                {errors.plan && (
+                  <p className="text-sm text-red-500">{errors.plan.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Descripción</Label>
                 <Input
                   id="description"
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  {...register("description")}
                 />
+                {errors.description && (
+                  <p className="text-sm text-red-500">{errors.description.message}</p>
+                )}
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                <Button type="submit" disabled={isPending}>
                   {editing ? "Guardar cambios" : "Crear tenant"}
                 </Button>
               </DialogFooter>

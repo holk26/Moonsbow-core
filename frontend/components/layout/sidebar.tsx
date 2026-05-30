@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const navItems = [
-  { href: "/tenants/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tenants/", label: "Tenants", icon: Building2 },
   { href: "/billing/", label: "Billing", icon: CreditCard },
   { href: "/users/", label: "Usuarios", icon: Users },
