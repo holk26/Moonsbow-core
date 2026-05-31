@@ -13,6 +13,9 @@ import {
   type MenuItemResponse,
   type TransactionResponse,
   type PaginatedResponse,
+  type AppResponse,
+  type AppCreate,
+  type AppUpdate,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://core.app.moonsbow.com";
@@ -137,4 +140,23 @@ export const api = {
     fetchApi<PaginatedResponse<TransactionResponse>>(
       `/api/v1/finance/tenant/${tenantId}/transactions?page=${page}&size=${size}`
     ),
+
+  // Apps
+  listApps: (page = 1, size = 20) =>
+    fetchApi<PaginatedResponse<AppResponse>>(`/api/v1/apps?page=${page}&size=${size}`),
+
+  getApp: (id: string) =>
+    fetchApi<AppResponse>(`/api/v1/apps/${id}`),
+
+  createApp: (data: AppCreate) =>
+    fetchApi<AppResponse>("/api/v1/apps", { method: "POST", body: JSON.stringify(data) }),
+
+  updateApp: (id: string, data: AppUpdate) =>
+    fetchApi<AppResponse>(`/api/v1/apps/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+
+  deleteApp: (id: string) =>
+    fetchApi<undefined>(`/api/v1/apps/${id}`, { method: "DELETE" }),
+
+  rotateAppKey: (id: string) =>
+    fetchApi<AppResponse>(`/api/v1/apps/${id}/rotate-key`, { method: "POST" }),
 };

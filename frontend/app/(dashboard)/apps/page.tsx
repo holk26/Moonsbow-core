@@ -8,7 +8,7 @@ import Link from "next/link";
 export default function AppsPage() {
   const { data: apps, isLoading } = useQuery({
     queryKey: ["apps"],
-    queryFn: () => api.get("/apps").then((r) => r.data),
+    queryFn: () => api.listApps().then((r) => r.items),
   });
 
   if (isLoading) return <p>Cargando...</p>;

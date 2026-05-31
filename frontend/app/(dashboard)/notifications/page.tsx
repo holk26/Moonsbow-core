@@ -29,7 +29,7 @@ export default function NotificationsPage() {
     queryFn: () =>
       user?.id && tenantId
         ? api.listNotifications(user.id, tenantId)
-        : Promise.resolve({ items: [], total: 0 }),
+        : Promise.resolve({ items: [], total: 0, page: 1, size: 20, pages: 0 }),
     enabled: !!user?.id && !!tenantId,
   });
 

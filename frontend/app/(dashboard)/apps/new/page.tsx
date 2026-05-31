@@ -16,7 +16,7 @@ export default function NewAppPage() {
 
   const mutation = useMutation({
     mutationFn: (data: { name: string; slug: string }) =>
-      api.post("/apps", data),
+      api.createApp(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["apps"] });
       router.push("/apps");

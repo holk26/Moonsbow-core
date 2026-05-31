@@ -113,6 +113,30 @@ export interface TransactionResponse {
   created_at: string;
 }
 
+export interface AppResponse {
+  id: string;
+  name: string;
+  slug: string;
+  api_key: string;
+  is_active: boolean;
+  webhook_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AppCreate {
+  name: string;
+  slug: string;
+  webhook_url?: string;
+}
+
+export interface AppUpdate {
+  name?: string;
+  slug?: string;
+  webhook_url?: string;
+  is_active?: boolean;
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;

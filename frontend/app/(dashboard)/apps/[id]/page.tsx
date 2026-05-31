@@ -9,7 +9,7 @@ export default function AppDetailPage() {
   const { id } = useParams();
   const { data: app, isLoading } = useQuery({
     queryKey: ["app", id],
-    queryFn: () => api.get(`/apps/${id}`).then((r) => r.data),
+    queryFn: () => api.getApp(id as string),
   });
 
   if (isLoading) return <p>Cargando...</p>;
@@ -25,7 +25,7 @@ export default function AppDetailPage() {
         {app.webhook_url && <p><strong>Webhook URL:</strong> {app.webhook_url}</p>}
       </div>
       <Button
-        onClick={() => api.post(`/apps/${id}/rotate-key`).then(() => window.location.reload())}
+        onClick={() => api.rotateAppKey(id as string).then(() => window.location.reload())}
         variant="outline"
       >
         Rotar API Key
