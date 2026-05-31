@@ -368,6 +368,42 @@ An in-memory async event dispatcher lives in `backend/core/events/dispatcher.py`
 
 ---
 
+## Integration Skill
+
+A Kimi Code skill lives in `docs/superpowers/skills/moonsbow-integration/` that teaches agents how to generate integration code for Moonsbow Core in JavaScript/TypeScript and Python.
+
+**When modifying the public API (schemas, routers, or auth methods), you MUST update the corresponding skill file** so it stays in sync with the backend implementation. Each skill module file includes a sync comment at the top:
+
+```markdown
+<!-- Last synced with backend: YYYY-MM-DD -->
+<!-- Source files: backend/modules/MODULE/router.py, backend/modules/MODULE/schemas.py -->
+```
+
+Update the date and source references after every API change.
+
+### Skill structure
+
+```
+docs/superpowers/skills/moonsbow-integration/
+├── SKILL.md          # Entry point: auth modes, conventions, base client
+├── auth.md           # JWT auth (register, login, me)
+├── apps.md           # App registration and API keys
+├── webhooks.md       # Subscriptions and HMAC-SHA256 verification
+├── billing.md        # Subscriptions
+├── tenants.md        # Tenant/organization CRUD
+├── events.md         # Platform events
+└── notifications.md  # User notifications
+```
+
+### How to use the skill
+
+When asked to write integration code, agents should:
+1. Read `SKILL.md` first for base conventions and authentication
+2. Read the specific module file (e.g., `webhooks.md`) for endpoint details
+3. Generate code using the provided TypeScript and Python examples as templates
+
+---
+
 ## Files to Know
 
 | File | Purpose |
