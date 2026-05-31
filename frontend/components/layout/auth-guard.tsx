@@ -11,7 +11,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !user && pathname !== "/login/" && pathname !== "/register/") {
-      window.location.href = "/login/";
+      router.push("/login/");
     }
   }, [user, isLoading, router, pathname]);
 

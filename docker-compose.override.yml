@@ -1,0 +1,7 @@
+# Temporal override para evitar conflictos de puertos y exponer API directamente
+services:
+  postgres:
+    ports: []
+  api:
+    ports:
+      - "8000:8000"

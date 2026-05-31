@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (email === "dev@moonsbow.com" && password === "dev123") {
       localStorage.setItem("access_token", DEV_TOKEN);
       setUser(DEV_USER);
-      window.location.href = "/";
+      router.push("/");
       return;
     }
 
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("access_token", data.access_token);
     const me = await api.me();
     setUser(me);
-    window.location.href = "/";
+    router.push("/");
   };
 
   const register = async (email: string, password: string, full_name?: string) => {
