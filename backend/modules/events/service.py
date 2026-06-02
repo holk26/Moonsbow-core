@@ -28,3 +28,7 @@ class EventService:
         offset = (page - 1) * size
         events = await self.repo.list_by_tenant(tenant_id=tenant_id, offset=offset, limit=size)
         return [EventResponse.model_validate(e) for e in events]
+
+    async def list_recent(self, limit: int = 10) -> list[EventResponse]:
+        events = await self.repo.list_recent(limit=limit)
+        return [EventResponse.model_validate(e) for e in events]

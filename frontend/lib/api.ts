@@ -135,6 +135,9 @@ export const api = {
       `/api/v1/events/tenant/${tenantId}?page=${page}&size=${size}`
     ),
 
+  listRecentEvents: (limit = 10) =>
+    fetchApi<EventResponse[]>(`/api/v1/events/recent?limit=${limit}`),
+
   // Apps
   listApps: (page = 1, size = 20) =>
     fetchApi<AppResponse[]>(`/api/v1/apps?page=${page}&size=${size}`),

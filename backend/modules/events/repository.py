@@ -26,7 +26,16 @@ class EventRepository:
         result = await self.db.execute(
             select(PlatformEvent)
             .where(PlatformEvent.tenant_id == tenant_id)
+            .order_by(PlatformEvent.created_at.desc())
             .offset(offset)
+            .limit(limit)
+        )
+        return list(result.scalars().all())
+
+    async def list_recent(self, limit: int = 10) -> list[PlatformEvent]:
+        result = await self.db.execute(
+            select(PlatformEvent)
+            .order_by(PlatformEvent.created_at.desc())
             .limit(limit)
         )
         return list(result.scalars().all())

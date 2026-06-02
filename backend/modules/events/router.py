@@ -41,3 +41,13 @@ async def list_tenant_events(
 ):
     service = EventService(db)
     return await service.list_by_tenant(tenant_id=tenant_id, page=page, size=size)
+
+
+@router.get("/recent", response_model=list[EventResponse])
+async def list_recent_events(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _=Depends(get_current_user),
+    limit: int = 10,
+):
+    service = EventService(db)
+    return await service.list_recent(limit=limit)
