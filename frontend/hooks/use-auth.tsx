@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import type { UserResponse } from "@/lib/types";
 
+const IS_DEV = process.env.NEXT_PUBLIC_APP_ENV === "development" || !process.env.NEXT_PUBLIC_APP_ENV;
+
 const DEV_USER: UserResponse = {
   id: "dev-001",
   email: "dev@moonsbow.com",
@@ -33,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const token = localStorage.getItem("access_token");
-    if (token === DEV_TOKEN) {
+    if (IS_DEV && token === DEV_TOKEN) {
       setUser(DEV_USER);
       setIsLoading(false);
     } else if (token) {
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    if (email === "dev@moonsbow.com" && password === "dev123") {
+    if (IS_DEV && email === "dev@moonsbow.com" && password === "dev123") {
       localStorage.setItem("access_token", DEV_TOKEN);
       setUser(DEV_USER);
       router.push("/");

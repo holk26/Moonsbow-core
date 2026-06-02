@@ -9,13 +9,11 @@ import {
   type SubscriptionResponse,
   type NotificationResponse,
   type EventResponse,
-  type CourseResponse,
-  type MenuItemResponse,
-  type TransactionResponse,
-  type PaginatedResponse,
   type AppResponse,
   type AppCreate,
   type AppUpdate,
+  type StatsResponse,
+  type PaginatedResponse,
 } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://core.app.moonsbow.com";
@@ -93,6 +91,12 @@ export const api = {
 
   me: () => fetchApi<UserResponse>("/api/v1/auth/me"),
 
+  listUsers: (page = 1, size = 20) =>
+    fetchApi<UserResponse[]>(`/api/v1/auth/users?page=${page}&size=${size}`),
+
+  // Stats
+  getStats: () => fetchApi<StatsResponse>("/api/v1/stats/"),
+
   // Tenants
   listTenants: (page = 1, size = 20) =>
     fetchApi<PaginatedResponse<TenantResponse>>(`/api/v1/tenants?page=${page}&size=${size}`),
@@ -110,9 +114,15 @@ export const api = {
   getSubscriptions: (tenantId: string) =>
     fetchApi<SubscriptionResponse[]>(`/api/v1/billing/tenants/${tenantId}/subscriptions`),
 
+  createSubscription: (data: { tenant_id: string; plan: string; status?: string; expires_at?: string; external_id?: string }) =>
+    fetchApi<SubscriptionResponse>("/api/v1/billing/subscriptions", { method: "POST", body: JSON.stringify(data) }),
+
+  updateSubscription: (id: string, data: { plan?: string; status?: string; expires_at?: string }) =>
+    fetchApi<SubscriptionResponse>(`/api/v1/billing/subscriptions/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+
   // Notifications
   listNotifications: (userId: string, tenantId: string, page = 1, size = 20) =>
-    fetchApi<PaginatedResponse<NotificationResponse>>(
+    fetchApi<NotificationResponse[]>(
       `/api/v1/notifications/user/${userId}/tenant/${tenantId}?page=${page}&size=${size}`
     ),
 
@@ -121,29 +131,13 @@ export const api = {
 
   // Events
   listEvents: (tenantId: string, page = 1, size = 20) =>
-    fetchApi<PaginatedResponse<EventResponse>>(
+    fetchApi<EventResponse[]>(
       `/api/v1/events/tenant/${tenantId}?page=${page}&size=${size}`
-    ),
-
-  // Plugins
-  listCourses: (tenantId: string, page = 1, size = 20) =>
-    fetchApi<PaginatedResponse<CourseResponse>>(
-      `/api/v1/lms/tenant/${tenantId}/courses?page=${page}&size=${size}`
-    ),
-
-  listMenu: (tenantId: string, page = 1, size = 20) =>
-    fetchApi<PaginatedResponse<MenuItemResponse>>(
-      `/api/v1/restaurant/tenant/${tenantId}/menu?page=${page}&size=${size}`
-    ),
-
-  listTransactions: (tenantId: string, page = 1, size = 20) =>
-    fetchApi<PaginatedResponse<TransactionResponse>>(
-      `/api/v1/finance/tenant/${tenantId}/transactions?page=${page}&size=${size}`
     ),
 
   // Apps
   listApps: (page = 1, size = 20) =>
-    fetchApi<PaginatedResponse<AppResponse>>(`/api/v1/apps?page=${page}&size=${size}`),
+    fetchApi<AppResponse[]>(`/api/v1/apps?page=${page}&size=${size}`),
 
   getApp: (id: string) =>
     fetchApi<AppResponse>(`/api/v1/apps/${id}`),

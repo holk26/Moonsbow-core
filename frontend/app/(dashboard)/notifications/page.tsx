@@ -8,16 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, Bell } from "lucide-react";
-
-interface Notification {
-  id: string;
-  user_id: string;
-  tenant_id: string;
-  title: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-}
+import type { NotificationResponse } from "@/lib/types";
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -29,7 +20,7 @@ export default function NotificationsPage() {
     queryFn: () =>
       user?.id && tenantId
         ? api.listNotifications(user.id, tenantId)
-        : Promise.resolve({ items: [], total: 0, page: 1, size: 20, pages: 0 }),
+        : Promise.resolve([]),
     enabled: !!user?.id && !!tenantId,
   });
 
@@ -38,7 +29,7 @@ export default function NotificationsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
   });
 
-  const notifications: Notification[] = ((data?.items || []) as unknown as Notification[]) || [];
+  const notifications: NotificationResponse[] = data || [];
 
   return (
     <div className="space-y-4">
@@ -62,7 +53,7 @@ export default function NotificationsPage() {
             <Card key={notif.id} className={notif.is_read ? "opacity-60" : ""}>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">{notif.title}</CardTitle>
+                  <CardTitle className="text-base">{notif.subject || notif.type}</CardTitle>
                   {!notif.is_read && (
                     <Button
                       variant="ghost"
@@ -76,11 +67,11 @@ export default function NotificationsPage() {
                   )}
                 </div>
                 <CardDescription>
-                  {new Date(notif.created_at).toLocaleString()}
+                  {notif.sent_at ? new Date(notif.sent_at).toLocaleString() : "Enviada"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm">{notif.message}</p>
+                <p className="text-sm">{notif.content}</p>
                 {!notif.is_read && <Badge className="mt-2">Nueva</Badge>}
               </CardContent>
             </Card>

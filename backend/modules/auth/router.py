@@ -25,3 +25,20 @@ async def login(data: LoginRequest, db: Annotated[AsyncSession, Depends(get_db)]
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user=Depends(get_current_user)):
     return current_user
+
+
+@router.get("/users", response_model=list[UserResponse])
+async def list_users(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user=Depends(get_current_user),
+    page: int = 1,
+    size: int = 20,
+):
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only superusers can list all users",
+        )
+    service = AuthService(db)
+    users, _ = await service.list_users(page=page, size=size)
+    return users

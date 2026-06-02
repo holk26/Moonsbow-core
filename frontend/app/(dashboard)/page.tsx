@@ -3,31 +3,22 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, CreditCard, Users, Bell } from "lucide-react";
+import { Building2, CreditCard, Users, Bell, AppWindow, CalendarDays } from "lucide-react";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-
-interface Stats {
-  tenants: number;
-  users: number;
-  notifications: number;
-}
+import type { StatsResponse } from "@/lib/types";
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<Stats>({ tenants: 0, users: 0, notifications: 0 });
+  const [stats, setStats] = useState<StatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadStats() {
       try {
         setLoading(true);
-        const tenantsData = await api.listTenants(1, 1);
-        setStats({
-          tenants: tenantsData.total || 0,
-          users: 1,
-          notifications: 0,
-        });
+        const data = await api.getStats();
+        setStats(data);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Error cargando datos");
       } finally {
@@ -38,10 +29,12 @@ export default function DashboardPage() {
   }, []);
 
   const statCards = [
-    { title: "Tenants", value: stats.tenants.toString(), icon: Building2, description: "Organizaciones activas" },
-    { title: "Usuarios", value: stats.users.toString(), icon: Users, description: "Usuarios registrados" },
-    { title: "Suscripciones", value: "—", icon: CreditCard, description: "Planes activos" },
-    { title: "Notificaciones", value: stats.notifications.toString(), icon: Bell, description: "No leídas" },
+    { title: "Tenants", value: stats?.tenants ?? 0, icon: Building2, description: "Organizaciones activas" },
+    { title: "Usuarios", value: stats?.users ?? 0, icon: Users, description: "Usuarios registrados" },
+    { title: "Apps", value: stats?.apps ?? 0, icon: AppWindow, description: "Aplicaciones integradas" },
+    { title: "Suscripciones", value: stats?.subscriptions ?? 0, icon: CreditCard, description: "Planes activos" },
+    { title: "Eventos", value: stats?.events ?? 0, icon: CalendarDays, description: "Eventos registrados" },
+    { title: "Notificaciones", value: stats?.notifications ?? 0, icon: Bell, description: "Notificaciones enviadas" },
   ];
 
   return (
@@ -55,7 +48,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {statCards.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -83,19 +76,19 @@ export default function DashboardPage() {
             <CardDescription>Eventos del sistema en los últimos 7 días</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">No hay eventos recientes.</p>
+            <p className="text-sm text-muted-foreground">Consulta la página de Eventos para ver el log completo.</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Plugins activos</CardTitle>
-            <CardDescription>Módulos habilitados en la plataforma</CardDescription>
+            <CardTitle>Módulos activos</CardTitle>
+            <CardDescription>Servicios habilitados en la plataforma</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {["LMS", "Restaurant", "Finance"].map((plugin) => (
-                <div key={plugin} className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-sm font-medium">{plugin}</span>
+              {["Auth", "Tenants", "Billing", "Apps", "Webhooks", "Events", "Notifications"].map((mod) => (
+                <div key={mod} className="flex items-center justify-between rounded-lg border p-3">
+                  <span className="text-sm font-medium">{mod}</span>
                   <span className="text-xs text-green-500">● Activo</span>
                 </div>
               ))}

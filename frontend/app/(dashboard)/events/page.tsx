@@ -7,14 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarDays } from "lucide-react";
-
-interface Event {
-  id: string;
-  tenant_id: string;
-  event_type: string;
-  payload: Record<string, unknown>;
-  created_at: string;
-}
+import type { EventResponse } from "@/lib/types";
 
 export default function EventsPage() {
   const [tenantId, setTenantId] = useState("");
@@ -26,11 +19,11 @@ export default function EventsPage() {
 
   const { data, isLoading } = useQuery({
     queryKey: ["events", tenantId],
-    queryFn: () => (tenantId ? api.listEvents(tenantId) : Promise.resolve({ items: [], total: 0, page: 1, size: 20, pages: 0 })),
+    queryFn: () => (tenantId ? api.listEvents(tenantId) : Promise.resolve([])),
     enabled: !!tenantId,
   });
 
-  const events: Event[] = ((data?.items || []) as unknown as Event[]) || [];
+  const events: EventResponse[] = data || [];
   const tenantList = (tenants?.items as Array<{ id: string; name: string }>) || [];
 
   return (
@@ -69,8 +62,9 @@ export default function EventsPage() {
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">{event.event_type}</CardTitle>
-                  <Badge variant="outline">{new Date(event.created_at).toLocaleString()}</Badge>
+                  <Badge variant="outline">{event.status}</Badge>
                 </div>
+                <CardDescription>Origen: {event.source}</CardDescription>
               </CardHeader>
               <CardContent>
                 <pre className="text-xs bg-muted p-2 rounded overflow-auto">

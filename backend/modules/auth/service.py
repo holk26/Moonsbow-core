@@ -89,3 +89,7 @@ class AuthService:
                 detail="User not found",
             )
         return UserResponse.model_validate(user)
+
+    async def list_users(self, page: int = 1, size: int = 20) -> tuple[list[UserResponse], int]:
+        users, total = await self.repo.list_all(page=page, size=size)
+        return [UserResponse.model_validate(u) for u in users], total

@@ -6,15 +6,7 @@ import { api } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-interface Subscription {
-  id: string;
-  tenant_id: string;
-  plan: string;
-  status: string;
-  start_date: string;
-  end_date: string | null;
-}
+import type { SubscriptionResponse } from "@/lib/types";
 
 export default function BillingPage() {
   const [tenantId, setTenantId] = useState("");
@@ -30,7 +22,7 @@ export default function BillingPage() {
     enabled: !!tenantId,
   });
 
-  const subscriptions: Subscription[] = (data as Subscription[]) || [];
+  const subscriptions: SubscriptionResponse[] = data || [];
   const tenantList = (tenants?.items as Array<{ id: string; name: string }>) || [];
 
   return (
@@ -72,11 +64,16 @@ export default function BillingPage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Inicio: {new Date(sub.start_date).toLocaleDateString()}
+                    Inicio: {sub.started_at ? new Date(sub.started_at).toLocaleDateString() : "—"}
                   </p>
-                  {sub.end_date && (
+                  {sub.expires_at && (
                     <p className="text-sm text-muted-foreground">
-                      Fin: {new Date(sub.end_date).toLocaleDateString()}
+                      Expira: {new Date(sub.expires_at).toLocaleDateString()}
+                    </p>
+                  )}
+                  {sub.external_id && (
+                    <p className="text-xs text-muted-foreground">
+                      ID externo: {sub.external_id}
                     </p>
                   )}
                 </CardContent>

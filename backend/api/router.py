@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from backend.api.health import router as health_router
+from backend.api.stats import router as stats_router
 from backend.modules.auth.router import router as auth_router
 from backend.modules.tenants.router import router as tenants_router
 from backend.modules.billing.router import router as billing_router
@@ -12,6 +13,7 @@ from backend.modules.webhooks.router import router as webhooks_router
 api_router = APIRouter(prefix="/api/v1")
 
 api_router.include_router(health_router)
+api_router.include_router(stats_router)
 api_router.include_router(auth_router)
 api_router.include_router(tenants_router)
 api_router.include_router(billing_router)

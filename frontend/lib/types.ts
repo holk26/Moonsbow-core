@@ -53,64 +53,29 @@ export interface SubscriptionResponse {
   tenant_id: string;
   plan: string;
   status: string;
-  start_date: string;
-  end_date: string | null;
+  started_at: string | null;
+  expires_at: string | null;
+  external_id: string | null;
 }
 
 export interface NotificationResponse {
   id: string;
-  user_id: string;
   tenant_id: string;
-  title: string;
-  message: string;
+  user_id: string | null;
+  type: string;
+  subject: string | null;
+  content: string;
   is_read: boolean;
-  created_at: string;
+  sent_at: string | null;
 }
 
 export interface EventResponse {
   id: string;
   tenant_id: string;
   event_type: string;
-  payload: Record<string, unknown>;
-  created_at: string;
-}
-
-export interface CourseResponse {
-  id: string;
-  tenant_id: string;
-  title: string;
-  description: string | null;
-  instructor: string | null;
-  is_active: boolean;
-}
-
-export interface MenuItemResponse {
-  id: string;
-  tenant_id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  category: string;
-  is_available: boolean;
-}
-
-export interface OrderResponse {
-  id: string;
-  tenant_id: string;
-  items: Array<{ item_id: string; quantity: number }>;
-  total: number;
+  source: string;
+  payload: Record<string, unknown> | null;
   status: string;
-  created_at: string;
-}
-
-export interface TransactionResponse {
-  id: string;
-  tenant_id: string;
-  amount: number;
-  currency: string;
-  description: string | null;
-  status: string;
-  created_at: string;
 }
 
 export interface AppResponse {
@@ -120,21 +85,30 @@ export interface AppResponse {
   api_key: string;
   is_active: boolean;
   webhook_url: string | null;
-  created_at: string;
-  updated_at: string;
+  description: string | null;
 }
 
 export interface AppCreate {
   name: string;
   slug: string;
+  description?: string;
   webhook_url?: string;
 }
 
 export interface AppUpdate {
   name?: string;
-  slug?: string;
+  description?: string;
   webhook_url?: string;
   is_active?: boolean;
+}
+
+export interface StatsResponse {
+  users: number;
+  tenants: number;
+  apps: number;
+  subscriptions: number;
+  notifications: number;
+  events: number;
 }
 
 export interface PaginatedResponse<T> {

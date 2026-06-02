@@ -37,3 +37,10 @@ class UserRepository:
         await self.db.flush()
         await self.db.refresh(user)
         return user
+
+    async def list_all(self, page: int = 1, size: int = 20) -> tuple[list[User], int]:
+        from sqlalchemy import func
+        offset = (page - 1) * size
+        result = await self.db.execute(select(User).order_by(User.created_at.desc()).offset(offset).limit(size))
+        count_result = await self.db.execute(select(func.count()).select_from(User))
+        return result.scalars().all(), count_result.scalar_one()

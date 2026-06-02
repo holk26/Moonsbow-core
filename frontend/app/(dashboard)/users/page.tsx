@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Plus } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +19,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useQuery } from "@tanstack/react-query";
 
 export default function UsersPage() {
   const { user } = useAuth();
@@ -29,6 +38,12 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(false);
 
   const isAdmin = user?.is_superuser;
+
+  const { data: usersList, isLoading: usersLoading } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => api.listUsers(),
+    enabled: isAdmin,
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +65,8 @@ export default function UsersPage() {
       setLoading(false);
     }
   };
+
+  const allUsers = usersList || [];
 
   return (
     <div className="space-y-4">
@@ -152,26 +169,60 @@ export default function UsersPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Información del sistema</CardTitle>
-          <CardDescription>Configuración de la plataforma</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Registro público</span>
-            <Badge variant="secondary">Deshabilitado</Badge>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Creación de usuarios</span>
-            <Badge variant="default">Solo admin</Badge>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Autenticación</span>
-            <Badge variant="default">JWT</Badge>
-          </div>
-        </CardContent>
-      </Card>
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Todos los usuarios
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Rol</TableHead>
+                    <TableHead>Estado</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {usersLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center">Cargando...</TableCell>
+                    </TableRow>
+                  ) : allUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        No hay usuarios registrados
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    allUsers.map((u) => (
+                      <TableRow key={u.id}>
+                        <TableCell className="font-medium">{u.full_name || "—"}</TableCell>
+                        <TableCell>{u.email}</TableCell>
+                        <TableCell>
+                          <Badge variant={u.is_superuser ? "outline" : "secondary"}>
+                            {u.is_superuser ? "Super Admin" : "Usuario"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={u.is_active ? "default" : "secondary"}>
+                            {u.is_active ? "Activo" : "Inactivo"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
