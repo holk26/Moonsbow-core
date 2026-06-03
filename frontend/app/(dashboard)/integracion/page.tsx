@@ -214,7 +214,7 @@ export default function IntegracionPage() {
           {appsLoading ? (
             <p>Cargando apps...</p>
           ) : apps && apps.length > 0 ? (
-            <Select value={selectedAppId} onValueChange={setSelectedAppId}>
+            <Select value={selectedAppId} onValueChange={(v) => v && setSelectedAppId(v)}>
               <SelectTrigger className="w-[320px]">
                 <SelectValue placeholder="Selecciona una app" />
               </SelectTrigger>
