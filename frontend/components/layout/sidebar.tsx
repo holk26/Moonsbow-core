@@ -10,6 +10,7 @@ import {
   Users,
   Bell,
   CalendarDays,
+  Code2,
   AppWindow,
   LogOut,
   Menu,
@@ -22,6 +23,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/apps/", label: "Aplicaciones", icon: AppWindow },
+  { href: "/integracion/", label: "Integración", icon: Code2 },
   { href: "/tenants/", label: "Tenants", icon: Building2 },
   { href: "/billing/", label: "Billing", icon: CreditCard },
   { href: "/users/", label: "Usuarios", icon: Users },

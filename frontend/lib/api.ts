@@ -14,9 +14,11 @@ import {
   type AppUpdate,
   type StatsResponse,
   type PaginatedResponse,
+  type WebhookResponse,
+  type WebhookCreate,
 } from "./types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://core.app.moonsbow.com";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://core.app.moonsbow.com";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
@@ -74,6 +76,35 @@ async function fetchApi<T>(
 }
 
 export { ApiError };
+
+async function fetchApiWithKey<T>(
+  path: string,
+  apiKey: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-API-Key": apiKey,
+    ...((options.headers as Record<string, string>) || {}),
+  };
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    redirect: "follow",
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ detail: "Unknown error" }));
+    throw new ApiError(error.detail || `HTTP ${res.status}`, res.status);
+  }
+
+  if (res.status === 204) {
+    return undefined as T;
+  }
+
+  return res.json() as Promise<T>;
+}
 
 export const api = {
   // Auth
@@ -156,4 +187,14 @@ export const api = {
 
   rotateAppKey: (id: string) =>
     fetchApi<AppResponse>(`/api/v1/apps/${id}/rotate-key`, { method: "POST" }),
+
+  // Webhooks (API Key auth)
+  listWebhooks: (apiKey: string) =>
+    fetchApiWithKey<WebhookResponse[]>("/api/v1/webhooks/", apiKey),
+
+  createWebhook: (apiKey: string, data: WebhookCreate) =>
+    fetchApiWithKey<WebhookResponse>("/api/v1/webhooks/", apiKey, { method: "POST", body: JSON.stringify(data) }),
+
+  deleteWebhook: (apiKey: string, id: string) =>
+    fetchApiWithKey<undefined>(`/api/v1/webhooks/${id}`, apiKey, { method: "DELETE" }),
 };

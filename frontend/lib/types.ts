@@ -111,6 +111,20 @@ export interface StatsResponse {
   events: number;
 }
 
+export interface WebhookResponse {
+  id: string;
+  app_id: string;
+  event_types: string[];
+  url: string;
+  secret: string;
+  is_active: boolean;
+}
+
+export interface WebhookCreate {
+  event_types: string[];
+  url: string;
+}
+
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
