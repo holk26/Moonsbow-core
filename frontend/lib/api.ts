@@ -130,10 +130,10 @@ export const api = {
 
   // Tenants
   listTenants: (page = 1, size = 20) =>
-    fetchApi<PaginatedResponse<TenantResponse>>(`/api/v1/tenants?page=${page}&size=${size}`),
+    fetchApi<PaginatedResponse<TenantResponse>>(`/api/v1/tenants/?page=${page}&size=${size}`),
 
   createTenant: (data: TenantCreate) =>
-    fetchApi<TenantResponse>("/api/v1/tenants", { method: "POST", body: JSON.stringify(data) }),
+    fetchApi<TenantResponse>("/api/v1/tenants/", { method: "POST", body: JSON.stringify(data) }),
 
   updateTenant: (id: string, data: TenantUpdate) =>
     fetchApi<TenantResponse>(`/api/v1/tenants/${id}`, { method: "PUT", body: JSON.stringify(data) }),
@@ -146,7 +146,7 @@ export const api = {
     fetchApi<SubscriptionResponse[]>(`/api/v1/billing/tenants/${tenantId}/subscriptions`),
 
   createSubscription: (data: { tenant_id: string; plan: string; status?: string; expires_at?: string; external_id?: string }) =>
-    fetchApi<SubscriptionResponse>("/api/v1/billing/subscriptions", { method: "POST", body: JSON.stringify(data) }),
+    fetchApi<SubscriptionResponse>("/api/v1/billing/subscriptions/", { method: "POST", body: JSON.stringify(data) }),
 
   updateSubscription: (id: string, data: { plan?: string; status?: string; expires_at?: string }) =>
     fetchApi<SubscriptionResponse>(`/api/v1/billing/subscriptions/${id}`, { method: "PUT", body: JSON.stringify(data) }),
@@ -171,13 +171,13 @@ export const api = {
 
   // Apps
   listApps: (page = 1, size = 20) =>
-    fetchApi<AppResponse[]>(`/api/v1/apps?page=${page}&size=${size}`),
+    fetchApi<AppResponse[]>(`/api/v1/apps/?page=${page}&size=${size}`),
 
   getApp: (id: string) =>
     fetchApi<AppResponse>(`/api/v1/apps/${id}`),
 
   createApp: (data: AppCreate) =>
-    fetchApi<AppResponse>("/api/v1/apps", { method: "POST", body: JSON.stringify(data) }),
+    fetchApi<AppResponse>("/api/v1/apps/", { method: "POST", body: JSON.stringify(data) }),
 
   updateApp: (id: string, data: AppUpdate) =>
     fetchApi<AppResponse>(`/api/v1/apps/${id}`, { method: "PUT", body: JSON.stringify(data) }),
