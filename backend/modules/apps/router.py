@@ -31,6 +31,16 @@ async def list_apps(
     return await service.list(page=page, size=size)
 
 
+@router.post("/{app_id}/rotate-key", response_model=AppResponse)
+async def rotate_app_key(
+    app_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _=Depends(get_current_user),
+):
+    service = AppService(db)
+    return await service.rotate_key(app_id)
+
+
 @router.get("/{app_id}", response_model=AppResponse)
 async def get_app(
     app_id: uuid.UUID,
@@ -60,13 +70,3 @@ async def delete_app(
 ):
     service = AppService(db)
     await service.delete(app_id)
-
-
-@router.post("/{app_id}/rotate-key", response_model=AppResponse)
-async def rotate_app_key(
-    app_id: uuid.UUID,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    _=Depends(get_current_user),
-):
-    service = AppService(db)
-    return await service.rotate_key(app_id)

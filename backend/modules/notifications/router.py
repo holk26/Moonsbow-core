@@ -21,16 +21,6 @@ async def send_notification(
     return await service.send(data)
 
 
-@router.get("/{notif_id}", response_model=NotificationResponse)
-async def get_notification(
-    notif_id: uuid.UUID,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    _=Depends(get_current_user),
-):
-    service = NotificationService(db)
-    return await service.get(notif_id)
-
-
 @router.get("/user/{user_id}/tenant/{tenant_id}", response_model=list[NotificationResponse])
 async def list_user_notifications(
     user_id: uuid.UUID,
@@ -52,3 +42,13 @@ async def mark_notification_read(
 ):
     service = NotificationService(db)
     return await service.mark_read(notif_id)
+
+
+@router.get("/{notif_id}", response_model=NotificationResponse)
+async def get_notification(
+    notif_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _=Depends(get_current_user),
+):
+    service = NotificationService(db)
+    return await service.get(notif_id)

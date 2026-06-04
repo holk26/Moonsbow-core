@@ -26,6 +26,8 @@ import backend.modules.tenants.models  # noqa: E402, F401
 import backend.modules.billing.models  # noqa: E402, F401
 import backend.modules.events.models  # noqa: E402, F401
 import backend.modules.notifications.models  # noqa: E402, F401
+import backend.modules.apps.models  # noqa: E402, F401
+import backend.modules.webhooks.models  # noqa: E402, F401
 import backend.plugins.lms.models  # noqa: E402, F401
 import backend.plugins.restaurant.models  # noqa: E402, F401
 import backend.plugins.finance.models  # noqa: E402, F401

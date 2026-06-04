@@ -15,6 +15,8 @@ export default function TodoList() {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [connectionStatus, setConnectionStatus] = useState<'checking' | 'connected' | 'error'>('checking')
+  const [connectionError, setConnectionError] = useState('')
 
   useEffect(() => {
     api
@@ -22,6 +24,18 @@ export default function TodoList() {
       .then(setUser)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    api
+      .listApps()
+      .then(() => {
+        setConnectionStatus('connected')
+      })
+      .catch((err) => {
+        setConnectionStatus('error')
+        setConnectionError(err.message)
+      })
   }, [])
 
   useEffect(() => {
@@ -66,6 +80,36 @@ export default function TodoList() {
   return (
     <div className="container">
       <h1>Todo App + Moonsbow</h1>
+
+      <div className="card" style={{ marginBottom: '1rem', background: connectionStatus === 'connected' ? '#f0fdf4' : '#fef2f2' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              background: connectionStatus === 'connected' ? '#22c55e' : connectionStatus === 'checking' ? '#eab308' : '#ef4444',
+            }}
+          />
+          <strong>
+            {connectionStatus === 'connected'
+              ? 'Conectado a Moonsbow'
+              : connectionStatus === 'checking'
+              ? 'Verificando conexión...'
+              : 'Error de conexión'}
+          </strong>
+        </div>
+        {connectionStatus === 'connected' && (
+          <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', color: '#166534' }}>
+            API Key activa. La app está integrada con Moonsbow Core.
+          </p>
+        )}
+        {connectionError && (
+          <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', color: '#991b1b' }}>
+            {connectionError}
+          </p>
+        )}
+      </div>
 
       <div className="user-bar">
         <div>
