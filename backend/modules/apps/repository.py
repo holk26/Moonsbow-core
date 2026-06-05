@@ -42,3 +42,7 @@ class AppRepository:
 
     async def delete(self, app: App) -> None:
         await self.db.delete(app)
+
+    async def get_active_apps(self) -> list[App]:
+        result = await self.db.execute(select(App).where(App.is_active == True))
+        return result.scalars().all()

@@ -44,7 +44,23 @@ class AuthService:
                 payload={"user_id": str(user.id), "email": user.email, "tenant_id": str(data.tenant_id) if data.tenant_id else None},
                 app_id=None,
             )
-            
+
+            # Dispatch sync webhook to all active apps for autonomous architecture
+            from backend.core.sync.dispatcher import get_sync_dispatcher
+            sync_dispatcher = get_sync_dispatcher()
+            await sync_dispatcher.dispatch(
+                event_type="sync.user.created",
+                payload={
+                    "id": str(user.id),
+                    "email": user.email,
+                    "full_name": user.full_name,
+                    "tenant_id": str(data.tenant_id) if data.tenant_id else None,
+                    "is_active": user.is_active,
+                    "created_at": user.created_at.isoformat() if user.created_at else None,
+                },
+                db=self.db,
+            )
+
             return UserResponse.model_validate(user)
         except HTTPException:
             raise
@@ -67,9 +83,24 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Inactive user",
             )
+
+        # Build extra claims from user's tenant for offline validation
+        extra_claims = {}
+        if user.tenant_id:
+            from backend.modules.tenants.repository import TenantRepository
+            tenant_repo = TenantRepository(self.db)
+            tenant = await tenant_repo.get_by_id(user.tenant_id)
+            if tenant:
+                extra_claims = {
+                    "tenant_id": str(tenant.id),
+                    "tenant_slug": tenant.slug,
+                    "tenant_plan": tenant.plan,
+                }
+
         token = create_access_token(
             data={"sub": str(user.id)},
             expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+            extra_claims=extra_claims,
         )
         return TokenResponse(access_token=token)
 

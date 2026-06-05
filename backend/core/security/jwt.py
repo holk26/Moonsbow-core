@@ -8,8 +8,14 @@ from backend.core.config.settings import get_settings
 settings = get_settings()
 
 
-def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
+def create_access_token(
+    data: dict[str, Any],
+    expires_delta: timedelta | None = None,
+    extra_claims: dict[str, Any] | None = None,
+) -> str:
     to_encode = data.copy()
+    if extra_claims:
+        to_encode.update(extra_claims)
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:

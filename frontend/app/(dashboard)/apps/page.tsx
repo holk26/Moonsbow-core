@@ -42,6 +42,7 @@ const appSchema = z.object({
     .max(50, "Máximo 50 caracteres"),
   description: z.string().max(500, "Máximo 500 caracteres").optional(),
   webhook_url: z.string().url("Debe ser una URL válida").optional().or(z.literal("")),
+  sync_url: z.string().url("Debe ser una URL válida").optional().or(z.literal("")),
 });
 
 type AppForm = z.infer<typeof appSchema>;
@@ -73,7 +74,7 @@ export default function AppsPage() {
     formState: { errors },
   } = useForm<AppForm>({
     resolver: zodResolver(appSchema),
-    defaultValues: { name: "", slug: "", description: "", webhook_url: "" },
+    defaultValues: { name: "", slug: "", description: "", webhook_url: "", sync_url: "" },
   });
 
   const nameValue = watch("name");
@@ -133,6 +134,7 @@ export default function AppsPage() {
       slug: formData.slug,
       description: formData.description || undefined,
       webhook_url: formData.webhook_url || undefined,
+      sync_url: formData.sync_url || undefined,
     };
     if (editing) {
       updateMutation.mutate({ id: editing.id, data });
@@ -148,13 +150,14 @@ export default function AppsPage() {
       slug: app.slug,
       description: app.description || "",
       webhook_url: app.webhook_url || "",
+      sync_url: app.sync_url || "",
     });
     setOpen(true);
   };
 
   const handleNew = () => {
     setEditing(null);
-    reset({ name: "", slug: "", description: "", webhook_url: "" });
+    reset({ name: "", slug: "", description: "", webhook_url: "", sync_url: "" });
     setOpen(true);
   };
 
@@ -231,6 +234,20 @@ export default function AppsPage() {
                 />
                 {errors.webhook_url && (
                   <p className="text-sm text-red-500">{errors.webhook_url.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sync_url">URL de sincronización</Label>
+                <Input
+                  id="sync_url"
+                  placeholder="https://tuservicio.com/sync/moonsbow"
+                  {...register("sync_url")}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Moonsbow enviará eventos de sincronización aquí cuando cambien usuarios, tenants o suscripciones.
+                </p>
+                {errors.sync_url && (
+                  <p className="text-sm text-red-500">{errors.sync_url.message}</p>
                 )}
               </div>
               <DialogFooter>

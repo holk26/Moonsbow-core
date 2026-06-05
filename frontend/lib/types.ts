@@ -85,6 +85,7 @@ export interface AppResponse {
   api_key: string;
   is_active: boolean;
   webhook_url: string | null;
+  sync_url: string | null;
   description: string | null;
 }
 
@@ -93,12 +94,14 @@ export interface AppCreate {
   slug: string;
   description?: string;
   webhook_url?: string;
+  sync_url?: string;
 }
 
 export interface AppUpdate {
   name?: string;
   description?: string;
   webhook_url?: string;
+  sync_url?: string;
   is_active?: boolean;
 }
 

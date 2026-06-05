@@ -16,6 +16,23 @@ class BillingService:
 
     async def create_subscription(self, data: SubscriptionCreate) -> SubscriptionResponse:
         sub = await self.repo.create(data.model_dump())
+
+        # Dispatch sync webhook so apps can update their local subscription tables
+        from backend.core.sync.dispatcher import get_sync_dispatcher
+        await get_sync_dispatcher().dispatch(
+            event_type="sync.subscription.created",
+            payload={
+                "id": str(sub.id),
+                "tenant_id": str(sub.tenant_id),
+                "plan": sub.plan,
+                "status": sub.status,
+                "started_at": sub.started_at.isoformat() if sub.started_at else None,
+                "expires_at": sub.expires_at.isoformat() if sub.expires_at else None,
+                "created_at": sub.created_at.isoformat() if sub.created_at else None,
+            },
+            db=self.db,
+        )
+
         return SubscriptionResponse.model_validate(sub)
 
     async def get_subscription(self, sub_id: uuid.UUID) -> SubscriptionResponse:
@@ -34,4 +51,21 @@ class BillingService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Subscription not found")
         updates = data.model_dump(exclude_unset=True)
         sub = await self.repo.update(sub, **updates)
+
+        # Dispatch sync webhook so apps can update their local subscription tables
+        from backend.core.sync.dispatcher import get_sync_dispatcher
+        await get_sync_dispatcher().dispatch(
+            event_type="sync.subscription.updated",
+            payload={
+                "id": str(sub.id),
+                "tenant_id": str(sub.tenant_id),
+                "plan": sub.plan,
+                "status": sub.status,
+                "started_at": sub.started_at.isoformat() if sub.started_at else None,
+                "expires_at": sub.expires_at.isoformat() if sub.expires_at else None,
+                "updated_at": sub.updated_at.isoformat() if sub.updated_at else None,
+            },
+            db=self.db,
+        )
+
         return SubscriptionResponse.model_validate(sub)

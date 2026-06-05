@@ -128,6 +128,7 @@ function generatePySdk(apiKey: string, baseUrl: string): string {
 export default function IntegracionPage() {
   const [selectedAppId, setSelectedAppId] = useState<string>("");
   const [language, setLanguage] = useState<"ts" | "py">("ts");
+  const [syncLang, setSyncLang] = useState<"ts" | "py">("ts");
   const [activeTab, setActiveTab] = useState("sdk");
   const [copied, setCopied] = useState(false);
 
@@ -275,6 +276,7 @@ export default function IntegracionPage() {
             <TabsTrigger value="sdk">SDK</TabsTrigger>
             <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
             <TabsTrigger value="docs">Documentación</TabsTrigger>
+            <TabsTrigger value="autonomia">Autonomía</TabsTrigger>
           </TabsList>
 
           <TabsContent value="sdk" className="space-y-4">
@@ -547,6 +549,339 @@ def verify_webhook(payload: bytes, signature: str, secret: str) -> bool:
                       <span>Error de validación de campos</span>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="autonomia" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Arquitectura Hub-and-Spoke</CardTitle>
+                <CardDescription>
+                  Tu app es soberana. Moonsbow empuja cambios; tú no necesitas preguntar.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ul className="list-disc pl-5 space-y-2 text-sm">
+                  <li>Moonsbow es la fuente de verdad para escrituras (registro, cambio de plan, billing).</li>
+                  <li>Tu app mantiene réplicas locales de usuarios, tenants y suscripciones.</li>
+                  <li>Moonsbow envía webhooks de sincronización cuando los datos cambian.</li>
+                  <li>El JWT incluye claims de tenant (<code>tenant_id</code>, <code>tenant_slug</code>, <code>tenant_plan</code>) para validación offline.</li>
+                  <li>99% de las consultas diarias se resuelven localmente (2ms, no 200ms).</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Esquema de base de datos local</CardTitle>
+                <CardDescription>
+                  Crea estas tablas en la base de datos de tu app para mantener réplicas locales.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="relative">
+                  <pre className="bg-muted p-4 rounded-lg overflow-auto text-xs max-h-[400px] font-mono">
+                    <code>{`-- Tablas locales que cada app debe tener
+
+CREATE TABLE moonsbow_users (
+    id UUID PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255),
+    tenant_id UUID,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
+    synced_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE moonsbow_tenants (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    plan VARCHAR(50) NOT NULL,
+    description TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
+    synced_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_moonsbow_tenants_slug ON moonsbow_tenants(slug);
+
+CREATE TABLE moonsbow_subscriptions (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    plan VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    started_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
+    synced_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX idx_moonsbow_subscriptions_tenant ON moonsbow_subscriptions(tenant_id);`}</code>
+                  </pre>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2"
+                    onClick={() => handleCopy(`CREATE TABLE moonsbow_users (id UUID PRIMARY KEY, email VARCHAR(255) NOT NULL, full_name VARCHAR(255), tenant_id UUID, is_active BOOLEAN DEFAULT TRUE, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ, synced_at TIMESTAMPTZ DEFAULT NOW()); CREATE TABLE moonsbow_tenants (id UUID PRIMARY KEY, name VARCHAR(255) NOT NULL, slug VARCHAR(255) NOT NULL, plan VARCHAR(50) NOT NULL, description TEXT, is_active BOOLEAN DEFAULT TRUE, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ, synced_at TIMESTAMPTZ DEFAULT NOW()); CREATE INDEX idx_moonsbow_tenants_slug ON moonsbow_tenants(slug); CREATE TABLE moonsbow_subscriptions (id UUID PRIMARY KEY, tenant_id UUID NOT NULL, plan VARCHAR(50) NOT NULL, status VARCHAR(50) NOT NULL, started_at TIMESTAMPTZ, expires_at TIMESTAMPTZ, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ, synced_at TIMESTAMPTZ DEFAULT NOW()); CREATE INDEX idx_moonsbow_subscriptions_tenant ON moonsbow_subscriptions(tenant_id);`)}
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recibir sync webhooks</CardTitle>
+                <CardDescription>
+                  Implementa un endpoint que reciba las sincronizaciones de Moonsbow y actualice tus tablas locales.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Button variant={syncLang === "ts" ? "default" : "outline"} onClick={() => setSyncLang("ts")}>TypeScript</Button>
+                  <Button variant={syncLang === "py" ? "default" : "outline"} onClick={() => setSyncLang("py")}>Python</Button>
+                </div>
+                <div className="relative">
+                  <pre className="bg-muted p-4 rounded-lg overflow-auto text-xs max-h-[500px] font-mono">
+                    <code>{syncLang === "ts" ? `// Express — POST /webhooks/moonsbow-sync
+import crypto from "crypto";
+
+app.post("/webhooks/moonsbow-sync", async (req, res) => {
+  const signature = req.headers["x-sync-signature"] as string;
+  const apiKey = process.env.MOONSBOW_API_KEY;
+
+  const expected = crypto
+    .createHmac("sha256", apiKey)
+    .update(JSON.stringify(req.body))
+    .digest("hex");
+
+  if (!crypto.timingSafeEqual(
+    Buffer.from(signature.replace("sha256=", "")),
+    Buffer.from(expected)
+  )) {
+    return res.status(401).send("Invalid signature");
+  }
+
+  const { event_type, payload } = req.body;
+
+  switch (event_type) {
+    case "sync.user.created":
+      await db.query(
+        \`INSERT INTO moonsbow_users (id, email, full_name, tenant_id, is_active, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (id) DO NOTHING\`,
+        [payload.id, payload.email, payload.full_name, payload.tenant_id, payload.is_active, payload.created_at]
+      );
+      break;
+
+    case "sync.tenant.updated":
+      await db.query(
+        \`UPDATE moonsbow_tenants SET name = $1, slug = $2, plan = $3, is_active = $4, updated_at = $5
+         WHERE id = $6\`,
+        [payload.name, payload.slug, payload.plan, payload.is_active, payload.updated_at, payload.id]
+      );
+      break;
+
+    case "sync.subscription.created":
+      await db.query(
+        \`INSERT INTO moonsbow_subscriptions (id, tenant_id, plan, status, started_at, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (id) DO NOTHING\`,
+        [payload.id, payload.tenant_id, payload.plan, payload.status, payload.started_at, payload.created_at]
+      );
+      break;
+  }
+
+  res.sendStatus(200);
+});` : `# FastAPI — POST /webhooks/moonsbow-sync
+import hmac
+import hashlib
+import json
+import os
+from fastapi import Request, HTTPException
+
+@app.post("/webhooks/moonsbow-sync")
+async def moonsbow_sync(request: Request):
+    body = await request.body()
+    signature = request.headers.get("x-sync-signature", "")
+    api_key = os.environ["MOONSBOW_API_KEY"]
+
+    expected = hmac.new(api_key.encode(), body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, signature.replace("sha256=", "")):
+        raise HTTPException(status_code=401, detail="Invalid signature")
+
+    data = json.loads(body)
+    event_type = data["event_type"]
+    payload = data["payload"]
+
+    if event_type == "sync.user.created":
+        await db.execute(
+            """INSERT INTO moonsbow_users (id, email, full_name, tenant_id, is_active, created_at)
+               VALUES (:id, :email, :full_name, :tenant_id, :is_active, :created_at)
+               ON CONFLICT (id) DO NOTHING""",
+            payload,
+        )
+    elif event_type == "sync.tenant.updated":
+        await db.execute(
+            """UPDATE moonsbow_tenants
+               SET name = :name, slug = :slug, plan = :plan, is_active = :is_active, updated_at = :updated_at
+               WHERE id = :id""",
+            payload,
+        )
+    elif event_type == "sync.subscription.created":
+        await db.execute(
+            """INSERT INTO moonsbow_subscriptions (id, tenant_id, plan, status, started_at, created_at)
+               VALUES (:id, :tenant_id, :plan, :status, :started_at, :created_at)
+               ON CONFLICT (id) DO NOTHING""",
+            payload,
+        )
+
+    return {"status": "ok"}`}</code>
+                  </pre>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2"
+                    onClick={() => handleCopy(syncLang === "ts" ? "// See TypeScript sync webhook code above" : "# See Python sync webhook code above")}
+                  >
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Validar JWT offline</CardTitle>
+                <CardDescription>
+                  El JWT que Moonsbow firma contiene claims del tenant. Tu app puede validarlo localmente sin llamar a la API.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Button variant={syncLang === "ts" ? "default" : "outline"} onClick={() => setSyncLang("ts")}>TypeScript</Button>
+                  <Button variant={syncLang === "py" ? "default" : "outline"} onClick={() => setSyncLang("py")}>Python</Button>
+                </div>
+                <div className="relative">
+                  <pre className="bg-muted p-4 rounded-lg overflow-auto text-xs max-h-[400px] font-mono">
+                    <code>{syncLang === "ts" ? `import { jwtVerify } from "jose";
+
+const SECRET = new TextEncoder().encode(process.env.MOONSBOW_SECRET_KEY);
+
+async function verifyToken(token: string) {
+  const { payload } = await jwtVerify(token, SECRET, { clockTolerance: 60 });
+  return {
+    userId: payload.sub as string,
+    tenantId: payload.tenant_id as string | undefined,
+    tenantSlug: payload.tenant_slug as string | undefined,
+    tenantPlan: payload.tenant_plan as string | undefined,
+  };
+}
+
+// Usage
+const { userId, tenantPlan } = await verifyToken(
+  req.headers.authorization!.replace("Bearer ", "")
+);
+if (tenantPlan !== "pro") {
+  throw new Error("Pro plan required");
+}` : `import jwt
+import os
+from jwt.exceptions import InvalidTokenError
+from fastapi import HTTPException
+
+SECRET = os.environ["MOONSBOW_SECRET_KEY"]
+
+def verify_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(token, SECRET, algorithms=["HS256"])
+        return {
+            "user_id": payload["sub"],
+            "tenant_id": payload.get("tenant_id"),
+            "tenant_slug": payload.get("tenant_slug"),
+            "tenant_plan": payload.get("tenant_plan"),
+        }
+    except InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+# Usage
+claims = verify_token(authorization.replace("Bearer ", ""))
+if claims["tenant_plan"] != "pro":
+    raise HTTPException(status_code=403, detail="Pro plan required")`}</code>
+                  </pre>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Eventos de sincronización</CardTitle>
+                <CardDescription>
+                  Lista completa de eventos que Moonsbow envía a tu <code>sync_url</code>.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Evento</TableHead>
+                      <TableHead>Cuándo se dispara</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell><code>sync.user.created</code></TableCell>
+                      <TableCell>Al registrar un nuevo usuario</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><code>sync.tenant.created</code></TableCell>
+                      <TableCell>Al crear una organización</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><code>sync.tenant.updated</code></TableCell>
+                      <TableCell>Al cambiar plan o datos de una organización</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><code>sync.subscription.created</code></TableCell>
+                      <TableCell>Al crear una suscripción</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell><code>sync.subscription.updated</code></TableCell>
+                      <TableCell>Al cambiar estado o plan de una suscripción</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Checklist de implementación</CardTitle>
+                <CardDescription>
+                  Sigue estos pasos para que tu app sea 100% autónoma.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[
+                    "Crear tablas moonsbow_users, moonsbow_tenants, moonsbow_subscriptions en tu base de datos",
+                    "Configurar sync_url en tu app (desde el formulario de Apps arriba)",
+                    "Implementar endpoint /webhooks/moonsbow-sync para recibir sincronizaciones",
+                    "Guardar MOONSBOW_SECRET_KEY en variables de entorno para validar JWT offline",
+                    "Reemplazar consultas a /api/v1/tenants/ por lecturas locales",
+                    "Monitorear logs de sincronización",
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium">{i + 1}</span>
+                      <p className="text-sm">{item}</p>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>

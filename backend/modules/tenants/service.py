@@ -21,6 +21,23 @@ class TenantService:
         tenant = await self.repo.create(
             name=data.name, slug=data.slug, plan=data.plan, description=data.description
         )
+
+        # Dispatch sync webhook so apps can update their local tenant tables
+        from backend.core.sync.dispatcher import get_sync_dispatcher
+        await get_sync_dispatcher().dispatch(
+            event_type="sync.tenant.created",
+            payload={
+                "id": str(tenant.id),
+                "name": tenant.name,
+                "slug": tenant.slug,
+                "plan": tenant.plan,
+                "description": tenant.description,
+                "is_active": tenant.is_active,
+                "created_at": tenant.created_at.isoformat() if tenant.created_at else None,
+            },
+            db=self.db,
+        )
+
         return TenantResponse.model_validate(tenant)
 
     async def get(self, tenant_id: uuid.UUID) -> TenantResponse:
@@ -49,6 +66,23 @@ class TenantService:
             if existing:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Tenant slug already exists")
         tenant = await self.repo.update(tenant, **updates)
+
+        # Dispatch sync webhook so apps can update their local tenant tables
+        from backend.core.sync.dispatcher import get_sync_dispatcher
+        await get_sync_dispatcher().dispatch(
+            event_type="sync.tenant.updated",
+            payload={
+                "id": str(tenant.id),
+                "name": tenant.name,
+                "slug": tenant.slug,
+                "plan": tenant.plan,
+                "description": tenant.description,
+                "is_active": tenant.is_active,
+                "updated_at": tenant.updated_at.isoformat() if tenant.updated_at else None,
+            },
+            db=self.db,
+        )
+
         return TenantResponse.model_validate(tenant)
 
     async def delete(self, tenant_id: uuid.UUID) -> None:

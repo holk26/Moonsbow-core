@@ -26,6 +26,7 @@ class AppService:
             slug=data.slug,
             description=data.description,
             webhook_url=data.webhook_url,
+            sync_url=data.sync_url,
             api_key=self._generate_api_key(),
         )
         return AppResponse.model_validate(app)
@@ -49,6 +50,7 @@ class AppService:
             name=data.name,
             description=data.description,
             webhook_url=data.webhook_url,
+            sync_url=data.sync_url,
             is_active=data.is_active,
         )
         return AppResponse.model_validate(app)
