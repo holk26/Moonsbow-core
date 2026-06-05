@@ -69,6 +69,10 @@ case "$APP_MODE" in
         echo "If this is the first deployment, the database may already be initialized." >&2
     fi
 
+    # Apply one-off migration for sync_url (idempotent)
+    echo "==> [api] Applying one-off migration for sync_url..."
+    python3 scripts/apply_migration_sync_url.py || echo "WARNING: One-off migration failed, continuing..."
+
     # Create default admin user if configured
     if [ -n "${DEFAULT_ADMIN_EMAIL:-}" ] && [ -n "${DEFAULT_ADMIN_PASSWORD:-}" ]; then
         echo "==> [api] Creating default admin user..."
