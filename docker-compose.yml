@@ -74,6 +74,45 @@ services:
       - moonsbow_net
     restart: unless-stopped
 
+  todo-app:
+    build:
+      context: ./examples/todo-app
+      dockerfile: Dockerfile
+    env_file: ./examples/todo-app/.env
+    environment:
+      DATABASE_URL: postgresql://todo:todo@todo-postgres:5432/todo
+      MOONSBOW_API_URL: http://api:8000
+      MOONSBOW_SECRET_KEY: ${SECRET_KEY}
+    depends_on:
+      todo-postgres:
+        condition: service_healthy
+      api:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.todo.rule=Host(`todo.localhost`)"
+      - "traefik.http.routers.todo.entrypoints=web"
+      - "traefik.http.services.todo.loadbalancer.server.port=3000"
+    networks:
+      - moonsbow_net
+    restart: unless-stopped
+
+  todo-postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: todo
+      POSTGRES_PASSWORD: todo
+      POSTGRES_DB: todo
+    volumes:
+      - todo_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U todo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - moonsbow_net
+
   postgres:
     image: postgres:15
     environment:
@@ -110,6 +149,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  todo_postgres_data:
 
 networks:
   moonsbow_net:
