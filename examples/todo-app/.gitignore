@@ -4,3 +4,4 @@
 .env
 .env.local
 *.log
+tsconfig.tsbuildinfo

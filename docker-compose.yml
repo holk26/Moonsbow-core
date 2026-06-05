@@ -88,6 +88,8 @@ services:
         condition: service_healthy
       api:
         condition: service_started
+    ports:
+      - "3010:3000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.todo.rule=Host(`todo.localhost`)"
