@@ -260,7 +260,7 @@ export default function IntegracionPage() {
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">No tienes apps registradas.</p>
               <Button asChild>
-                <Link href="/apps/new">
+                <Link href="/apps/">
                   Crear nueva app <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
