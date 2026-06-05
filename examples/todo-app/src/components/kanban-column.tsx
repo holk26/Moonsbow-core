@@ -10,8 +10,10 @@ interface KanbanColumnProps {
     id: string;
     title: string;
     description: string | null;
+    status: string;
     priority: string;
     dueDate: Date | null;
+    categoryId: string | null;
     category: { name: string; color: string } | null;
   }[];
   onTodoClick: (todo: KanbanColumnProps["todos"][0]) => void;
