@@ -5,7 +5,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -24,11 +32,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { TenantResponse } from "@/lib/types";
 
 const tenantSchema = z.object({
@@ -36,26 +46,42 @@ const tenantSchema = z.object({
   slug: z.string().min(1, "El slug es requerido")
     .regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones")
     .max(50, "Máximo 50 caracteres"),
-  plan: z.string().min(1, "El plan es requerido"),
+  plan: z.enum(["free", "pro", "enterprise"], { message: "Selecciona un plan válido" }),
   description: z.string().max(500, "Máximo 500 caracteres").optional(),
 });
 
 type TenantForm = z.infer<typeof tenantSchema>;
 
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 50);
+}
+
 export default function TenantsPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<TenantResponse | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TenantResponse | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<TenantForm>({
     resolver: zodResolver(tenantSchema),
     defaultValues: { name: "", slug: "", plan: "free", description: "" },
   });
+
+  const nameValue = watch("name");
 
   const { data, isLoading } = useQuery({
     queryKey: ["tenants"],
@@ -66,12 +92,12 @@ export default function TenantsPage() {
     mutationFn: api.createTenant,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
-      toast.success("Tenant creado correctamente");
+      toast.success("Organización creada correctamente");
       setOpen(false);
       reset({ name: "", slug: "", plan: "free", description: "" });
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Error al crear tenant");
+      toast.error(err.message || "Error al crear organización");
     },
   });
 
@@ -80,13 +106,13 @@ export default function TenantsPage() {
       api.updateTenant(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
-      toast.success("Tenant actualizado correctamente");
+      toast.success("Organización actualizada correctamente");
       setOpen(false);
       setEditing(null);
       reset({ name: "", slug: "", plan: "free", description: "" });
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Error al actualizar tenant");
+      toast.error(err.message || "Error al actualizar organización");
     },
   });
 
@@ -94,10 +120,11 @@ export default function TenantsPage() {
     mutationFn: api.deleteTenant,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
-      toast.success("Tenant eliminado correctamente");
+      toast.success("Organización eliminada correctamente");
+      setDeleteTarget(null);
     },
     onError: (err: Error) => {
-      toast.error(err.message || "Error al eliminar tenant");
+      toast.error(err.message || "Error al eliminar organización");
     },
   });
 
@@ -114,7 +141,7 @@ export default function TenantsPage() {
     reset({
       name: tenant.name,
       slug: tenant.slug,
-      plan: tenant.plan,
+      plan: tenant.plan as "free" | "pro" | "enterprise",
       description: tenant.description || "",
     });
     setOpen(true);
@@ -133,58 +160,78 @@ export default function TenantsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Tenants</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Organizaciones</h2>
           <p className="text-muted-foreground">Gestiona las organizaciones de la plataforma</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button onClick={handleNew}>
               <Plus className="mr-2 h-4 w-4" />
-              Nuevo Tenant
+              Nueva organización
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editing ? "Editar Tenant" : "Crear Tenant"}</DialogTitle>
+              <DialogTitle>{editing ? "Editar organización" : "Crear organización"}</DialogTitle>
               <DialogDescription>
-                {editing ? "Modifica los datos del tenant" : "Completa los datos para crear un nuevo tenant"}
+                {editing
+                  ? "Modifica los datos de la organización"
+                  : "Crea una nueva organización para agrupar usuarios y aplicaciones"}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre</Label>
+                <Label htmlFor="name">Nombre *</Label>
                 <Input
                   id="name"
+                  placeholder="Ej: Acme Corporation"
                   {...register("name")}
+                  onBlur={() => {
+                    const currentSlug = watch("slug");
+                    if (!currentSlug && nameValue) {
+                      setValue("slug", slugify(nameValue), { shouldValidate: true });
+                    }
+                  }}
                 />
                 {errors.name && (
                   <p className="text-sm text-red-500">{errors.name.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
-                <Input
-                  id="slug"
-                  {...register("slug")}
-                />
+                <Label htmlFor="slug">Slug *</Label>
+                <Input id="slug" placeholder="mi-organizacion" {...register("slug")} />
+                <p className="text-xs text-muted-foreground">
+                  URL amigable. Solo minúsculas, números y guiones. Se genera automáticamente desde el nombre.
+                </p>
                 {errors.slug && (
                   <p className="text-sm text-red-500">{errors.slug.message}</p>
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="plan">Plan</Label>
-                <Input
-                  id="plan"
-                  {...register("plan")}
-                />
+                <Label htmlFor="plan">Plan *</Label>
+                <Select
+                  value={watch("plan")}
+                  onValueChange={(v) => setValue("plan", v as "free" | "pro" | "enterprise", { shouldValidate: true })}
+                >
+                  <SelectTrigger id="plan">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="free">Free — para pruebas y desarrollo</SelectItem>
+                    <SelectItem value="pro">Pro — para producción con soporte</SelectItem>
+                    <SelectItem value="enterprise">Enterprise — personalizado y SLA</SelectItem>
+                  </SelectContent>
+                </Select>
                 {errors.plan && (
                   <p className="text-sm text-red-500">{errors.plan.message}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Descripción</Label>
-                <Input
+                <Textarea
                   id="description"
+                  placeholder="Describe el propósito de esta organización..."
+                  rows={3}
                   {...register("description")}
                 />
                 {errors.description && (
@@ -193,7 +240,7 @@ export default function TenantsPage() {
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={isPending}>
-                  {editing ? "Guardar cambios" : "Crear tenant"}
+                  {editing ? "Guardar cambios" : "Crear organización"}
                 </Button>
               </DialogFooter>
             </form>
@@ -201,30 +248,29 @@ export default function TenantsPage() {
         </Dialog>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="w-[100px]">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+      {isLoading ? (
+        <div className="rounded-md border p-10 text-center text-muted-foreground">Cargando...</div>
+      ) : tenants.length === 0 ? (
+        <EmptyState
+          icon={Building2}
+          title="Aún no tienes organizaciones"
+          description="Las organizaciones agrupan usuarios, aplicaciones y datos. Crea la primera para empezar a usar Moonsbow Core."
+          action={{ label: "Crear organización", onClick: handleNew }}
+        />
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5} className="text-center">Cargando...</TableCell>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Slug</TableHead>
+                <TableHead>Plan</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="w-[100px]">Acciones</TableHead>
               </TableRow>
-            ) : tenants.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
-                  No hay tenants registrados
-                </TableCell>
-              </TableRow>
-            ) : (
-              tenants.map((tenant) => (
+            </TableHeader>
+            <TableBody>
+              {tenants.map((tenant) => (
                 <TableRow key={tenant.id}>
                   <TableCell className="font-medium">{tenant.name}</TableCell>
                   <TableCell>{tenant.slug}</TableCell>
@@ -244,7 +290,7 @@ export default function TenantsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => deleteMutation.mutate(tenant.id)}
+                        onClick={() => setDeleteTarget(tenant)}
                         disabled={deleteMutation.isPending}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
@@ -252,11 +298,20 @@ export default function TenantsPage() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="¿Eliminar organización?"
+        description={`¿Estás seguro de que quieres eliminar "${deleteTarget?.name}"? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+      />
     </div>
   );
 }

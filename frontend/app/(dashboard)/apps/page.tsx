@@ -25,16 +25,58 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Copy, KeyRound } from "lucide-react";
+import { Plus, Pencil, Trash2, Copy, KeyRound, AppWindow } from "lucide-react";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { AppResponse } from "@/lib/types";
+
+const appSchema = z.object({
+  name: z.string().min(1, "El nombre es requerido").max(100, "Máximo 100 caracteres"),
+  slug: z.string().min(1, "El slug es requerido")
+    .regex(/^[a-z0-9-]+$/, "Solo minúsculas, números y guiones")
+    .max(50, "Máximo 50 caracteres"),
+  description: z.string().max(500, "Máximo 500 caracteres").optional(),
+  webhook_url: z.string().url("Debe ser una URL válida").optional().or(z.literal("")),
+});
+
+type AppForm = z.infer<typeof appSchema>;
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 50);
+}
 
 export default function AppsPage() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<AppResponse | null>(null);
-  const [form, setForm] = useState({ name: "", slug: "", description: "", webhook_url: "" });
+  const [deleteTarget, setDeleteTarget] = useState<AppResponse | null>(null);
+  const [rotateTarget, setRotateTarget] = useState<AppResponse | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<AppForm>({
+    resolver: zodResolver(appSchema),
+    defaultValues: { name: "", slug: "", description: "", webhook_url: "" },
+  });
+
+  const nameValue = watch("name");
 
   const { data: apps, isLoading } = useQuery({
     queryKey: ["apps"],
@@ -45,9 +87,9 @@ export default function AppsPage() {
     mutationFn: api.createApp,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["apps"] });
-      toast.success("App creada correctamente");
+      toast.success("Aplicación creada correctamente");
       setOpen(false);
-      setForm({ name: "", slug: "", description: "", webhook_url: "" });
+      reset({ name: "", slug: "", description: "", webhook_url: "" });
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -57,10 +99,10 @@ export default function AppsPage() {
       api.updateApp(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["apps"] });
-      toast.success("App actualizada");
+      toast.success("Aplicación actualizada");
       setOpen(false);
       setEditing(null);
-      setForm({ name: "", slug: "", description: "", webhook_url: "" });
+      reset({ name: "", slug: "", description: "", webhook_url: "" });
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -69,7 +111,8 @@ export default function AppsPage() {
     mutationFn: api.deleteApp,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["apps"] });
-      toast.success("App eliminada");
+      toast.success("Aplicación eliminada");
+      setDeleteTarget(null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -79,17 +122,17 @@ export default function AppsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["apps"] });
       toast.success("API Key rotada");
+      setRotateTarget(null);
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = (formData: AppForm) => {
     const data = {
-      name: form.name,
-      slug: form.slug,
-      description: form.description || undefined,
-      webhook_url: form.webhook_url || undefined,
+      name: formData.name,
+      slug: formData.slug,
+      description: formData.description || undefined,
+      webhook_url: formData.webhook_url || undefined,
     };
     if (editing) {
       updateMutation.mutate({ id: editing.id, data });
@@ -100,7 +143,7 @@ export default function AppsPage() {
 
   const handleEdit = (app: AppResponse) => {
     setEditing(app);
-    setForm({
+    reset({
       name: app.name,
       slug: app.slug,
       description: app.description || "",
@@ -111,7 +154,7 @@ export default function AppsPage() {
 
   const handleNew = () => {
     setEditing(null);
-    setForm({ name: "", slug: "", description: "", webhook_url: "" });
+    reset({ name: "", slug: "", description: "", webhook_url: "" });
     setOpen(true);
   };
 
@@ -128,32 +171,67 @@ export default function AppsPage() {
           <DialogTrigger asChild>
             <Button onClick={handleNew}>
               <Plus className="mr-2 h-4 w-4" />
-              Nueva App
+              Nueva aplicación
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>{editing ? "Editar App" : "Nueva App"}</DialogTitle>
+              <DialogTitle>{editing ? "Editar aplicación" : "Nueva aplicación"}</DialogTitle>
               <DialogDescription>
-                {editing ? "Modifica los datos de la app" : "Registra una nueva aplicación"}
+                {editing
+                  ? "Modifica los datos de la aplicación"
+                  : "Registra una nueva aplicación para obtener una API Key"}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre</Label>
-                <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+                <Label htmlFor="name">Nombre *</Label>
+                <Input
+                  id="name"
+                  placeholder="Ej: Mi App de Productos"
+                  {...register("name")}
+                  onBlur={() => {
+                    const currentSlug = watch("slug");
+                    if (!currentSlug && nameValue) {
+                      setValue("slug", slugify(nameValue), { shouldValidate: true });
+                    }
+                  }}
+                />
+                {errors.name && (
+                  <p className="text-sm text-red-500">{errors.name.message}</p>
+                )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
-                <Input id="slug" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} required />
+                <Label htmlFor="slug">Slug *</Label>
+                <Input id="slug" placeholder="mi-app" {...register("slug")} />
+                <p className="text-xs text-muted-foreground">
+                  URL amigable. Solo minúsculas, números y guiones. Se genera automáticamente desde el nombre.
+                </p>
+                {errors.slug && (
+                  <p className="text-sm text-red-500">{errors.slug.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="description">Descripción</Label>
-                <Input id="description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                <Input
+                  id="description"
+                  placeholder="¿Qué hace esta aplicación?"
+                  {...register("description")}
+                />
+                {errors.description && (
+                  <p className="text-sm text-red-500">{errors.description.message}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="webhook_url">Webhook URL</Label>
-                <Input id="webhook_url" value={form.webhook_url} onChange={(e) => setForm({ ...form, webhook_url: e.target.value })} placeholder="https://..." />
+                <Input
+                  id="webhook_url"
+                  placeholder="https://tuservicio.com/webhooks"
+                  {...register("webhook_url")}
+                />
+                {errors.webhook_url && (
+                  <p className="text-sm text-red-500">{errors.webhook_url.message}</p>
+                )}
               </div>
               <DialogFooter>
                 <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
@@ -165,30 +243,32 @@ export default function AppsPage() {
         </Dialog>
       </div>
 
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>API Key</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="w-[160px]">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
+      {isLoading ? (
+        <div className="rounded-md border p-10">
+          <Skeleton className="h-8 w-full" />
+        </div>
+      ) : appList.length === 0 ? (
+        <EmptyState
+          icon={AppWindow}
+          title="Sin aplicaciones conectadas"
+          description="Registra una app para obtener una API Key y conectar tu servicio con Moonsbow."
+          action={{ label: "Registrar aplicación", onClick: handleNew }}
+          secondary={{ label: "¿Qué es una API Key?", href: "/integracion/" }}
+        />
+      ) : (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={5}><Skeleton className="h-8 w-full" /></TableCell>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Slug</TableHead>
+                <TableHead>API Key</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead className="w-[160px]">Acciones</TableHead>
               </TableRow>
-            ) : appList.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
-                  No hay aplicaciones registradas
-                </TableCell>
-              </TableRow>
-            ) : (
-              appList.map((app) => (
+            </TableHeader>
+            <TableBody>
+              {appList.map((app) => (
                 <TableRow key={app.id}>
                   <TableCell className="font-medium">
                     <Link href={`/apps/${app.id}`} className="hover:underline">{app.name}</Link>
@@ -215,20 +295,38 @@ export default function AppsPage() {
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(app)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => rotateMutation.mutate(app.id)}>
+                      <Button variant="ghost" size="icon" onClick={() => setRotateTarget(app)}>
                         <KeyRound className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(app.id)}>
+                      <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(app)}>
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="¿Eliminar aplicación?"
+        description={`¿Estás seguro de que quieres eliminar "${deleteTarget?.name}"? Esta acción no se puede deshacer.`}
+        confirmLabel="Eliminar"
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+      />
+
+      <ConfirmDialog
+        open={!!rotateTarget}
+        onOpenChange={(open) => !open && setRotateTarget(null)}
+        title="¿Rotar API Key?"
+        description={`¿Rotar la API Key de "${rotateTarget?.name}"? La key anterior dejará de funcionar inmediatamente.`}
+        confirmLabel="Rotar"
+        onConfirm={() => rotateTarget && rotateMutation.mutate(rotateTarget.id)}
+      />
     </div>
   );
 }

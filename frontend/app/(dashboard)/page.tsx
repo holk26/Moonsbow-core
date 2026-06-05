@@ -102,58 +102,80 @@ export default function DashboardPage() {
       </div>
 
       {isEmpty && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle>🚀 Primeros pasos</CardTitle>
-            <CardDescription>
-              Tu plataforma está lista. Sigue estos pasos para empezar a usar Moonsbow Core.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <QuickStartStep
-              number={1}
-              title="Crear una organización (Tenant)"
-              description="Los tenants agrupan usuarios, apps y datos. Es el primer paso para organizar tu plataforma."
-              href="/tenants"
-              icon={Building2}
-            />
-            <QuickStartStep
-              number={2}
-              title="Registrar una aplicación"
-              description="Crea una app para obtener una API Key y conectar tu servicio con Moonsbow."
-              href="/apps"
-              icon={AppWindow}
-            />
-            <QuickStartStep
-              number={3}
-              title="Configurar webhooks"
-              description="Suscríbete a eventos como user.created o subscription.updated para recibir notificaciones en tiempo real."
-              href="/integracion"
-              icon={Webhook}
-            />
-            <QuickStartStep
-              number={4}
-              title="Integrar con tu código"
-              description="Usa el centro de integración para generar código SDK en TypeScript o Python listo para usar."
-              href="/integracion"
-              icon={Code2}
-            />
-            <QuickStartStep
-              number={5}
-              title="Leer la documentación"
-              description="Consulta la documentación de la API, autenticación y verificación de webhooks."
-              href="/integracion"
-              icon={BookOpen}
-            />
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl">🚀 Bienvenido a Moonsbow Core</CardTitle>
+              <CardDescription>
+                Tu plataforma está lista. Empieza creando tu primera organización.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center gap-4">
+              <p className="text-sm text-muted-foreground max-w-md text-center">
+                Moonsbow Core es el centro de control de tu infraestructura SaaS.
+                Necesitas al menos una organización y una aplicación para comenzar.
+              </p>
+              <Button size="lg" asChild>
+                <Link href="/tenants/">
+                  <Building2 className="mr-2 h-5 w-5" />
+                  Crear mi primera organización
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+              Primeros pasos
+            </h3>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <QuickStartStep
+                number={1}
+                title="Crear organización"
+                description="Agrupa usuarios, apps y datos en una organización."
+                href="/tenants/"
+                icon={Building2}
+              />
+              <QuickStartStep
+                number={2}
+                title="Registrar aplicación"
+                description="Obtén una API Key para conectar tu servicio."
+                href="/apps/"
+                icon={AppWindow}
+              />
+              <QuickStartStep
+                number={3}
+                title="Configurar webhooks"
+                description="Suscríbete a eventos del sistema en tiempo real."
+                href="/integracion/"
+                icon={Webhook}
+              />
+              <QuickStartStep
+                number={4}
+                title="Integrar con tu código"
+                description="Genera SDK en TypeScript o Python listo para usar."
+                href="/integracion/"
+                icon={Code2}
+              />
+              <QuickStartStep
+                number={5}
+                title="Leer documentación"
+                description="Consulta la API, autenticación y verificación HMAC."
+                href="/integracion/"
+                icon={BookOpen}
+              />
+            </div>
+          </div>
+        </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {statCards.map((stat) => (
-          <StatCard key={stat.title} {...stat} loading={loading} />
-        ))}
-      </div>
+      {!isEmpty && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {statCards.map((stat) => (
+            <StatCard key={stat.title} {...stat} loading={loading} />
+          ))}
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>

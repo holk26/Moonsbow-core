@@ -20,15 +20,35 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/apps/", label: "Aplicaciones", icon: AppWindow },
-  { href: "/integracion/", label: "Integración", icon: Code2 },
-  { href: "/tenants/", label: "Tenants", icon: Building2 },
-  { href: "/billing/", label: "Billing", icon: CreditCard },
-  { href: "/users/", label: "Usuarios", icon: Users },
-  { href: "/notifications/", label: "Notificaciones", icon: Bell },
-  { href: "/events/", label: "Eventos", icon: CalendarDays },
+const groups = [
+  {
+    label: "Plataforma",
+    items: [
+      { href: "/", label: "Dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "Gestión",
+    items: [
+      { href: "/tenants/", label: "Organizaciones", icon: Building2 },
+      { href: "/users/", label: "Usuarios", icon: Users },
+    ],
+  },
+  {
+    label: "Configuración",
+    items: [
+      { href: "/apps/", label: "Aplicaciones", icon: AppWindow },
+      { href: "/integracion/", label: "Integración", icon: Code2 },
+      { href: "/billing/", label: "Facturación", icon: CreditCard },
+    ],
+  },
+  {
+    label: "Monitoreo",
+    items: [
+      { href: "/notifications/", label: "Notificaciones", icon: Bell },
+      { href: "/events/", label: "Eventos", icon: CalendarDays },
+    ],
+  },
 ];
 
 export function Sidebar() {
@@ -61,11 +81,16 @@ export function Sidebar() {
         </Link>
       </div>
       <div className="flex-1 overflow-auto py-4 px-3 space-y-6">
-        <div className="space-y-1">
-          {navItems.map((item) => (
-            <NavLink key={item.href} {...item} />
-          ))}
-        </div>
+        {groups.map((group) => (
+          <div key={group.label} className="space-y-1">
+            <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              {group.label}
+            </p>
+            {group.items.map((item) => (
+              <NavLink key={item.href} {...item} />
+            ))}
+          </div>
+        ))}
       </div>
       <div className="border-t p-3">
         <button

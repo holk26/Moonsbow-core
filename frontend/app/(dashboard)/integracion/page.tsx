@@ -131,8 +131,34 @@ export default function IntegracionPage() {
   const [activeTab, setActiveTab] = useState("sdk");
   const [copied, setCopied] = useState(false);
 
-  const [eventTypes, setEventTypes] = useState("");
+  const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([]);
   const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookUrlError, setWebhookUrlError] = useState("");
+
+  const predefinedEvents = [
+    { value: "user.created", label: "Usuario creado" },
+    { value: "user.updated", label: "Usuario actualizado" },
+    { value: "subscription.updated", label: "Suscripción actualizada" },
+    { value: "subscription.cancelled", label: "Suscripción cancelada" },
+    { value: "payment.succeeded", label: "Pago exitoso" },
+    { value: "payment.failed", label: "Pago fallido" },
+  ];
+
+  function toggleEventType(value: string) {
+    setSelectedEventTypes((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
+    );
+  }
+
+  function validateWebhookUrl(url: string): boolean {
+    if (!url) return false;
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   const queryClient = useQueryClient();
 
@@ -155,16 +181,20 @@ export default function IntegracionPage() {
   const createWebhookMutation = useMutation({
     mutationFn: () => {
       if (!selectedApp) throw new Error("No app selected");
+      if (!validateWebhookUrl(webhookUrl)) {
+        throw new Error("La URL del webhook no es válida");
+      }
       return api.createWebhook(selectedApp.api_key, {
-        event_types: eventTypes.split(",").map((s) => s.trim()).filter(Boolean),
+        event_types: selectedEventTypes,
         url: webhookUrl,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["webhooks", selectedAppId] });
       toast.success("Webhook creado");
-      setEventTypes("");
+      setSelectedEventTypes([]);
       setWebhookUrl("");
+      setWebhookUrlError("");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -296,28 +326,51 @@ export default function IntegracionPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Tipos de evento (separados por coma)</Label>
-                    <Input
-                      value={eventTypes}
-                      onChange={(e) => setEventTypes(e.target.value)}
-                      placeholder="user.created, subscription.updated"
-                    />
+                <div className="space-y-2">
+                  <Label>Eventos a suscribir *</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {predefinedEvents.map((evt) => (
+                      <label
+                        key={evt.value}
+                        className="flex items-center gap-2 rounded-lg border p-3 cursor-pointer hover:bg-muted transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedEventTypes.includes(evt.value)}
+                          onChange={() => toggleEventType(evt.value)}
+                          className="h-4 w-4 rounded border-gray-300"
+                        />
+                        <span className="text-sm">{evt.label}</span>
+                        <code className="ml-auto text-xs text-muted-foreground">{evt.value}</code>
+                      </label>
+                    ))}
                   </div>
-                  <div className="space-y-2">
-                    <Label>URL del webhook</Label>
-                    <Input
-                      value={webhookUrl}
-                      onChange={(e) => setWebhookUrl(e.target.value)}
-                      placeholder="https://tu-servicio.com/webhooks"
-                    />
-                  </div>
+                  {selectedEventTypes.length === 0 && (
+                    <p className="text-sm text-muted-foreground">Selecciona al menos un evento.</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>URL del webhook *</Label>
+                  <Input
+                    value={webhookUrl}
+                    onChange={(e) => {
+                      setWebhookUrl(e.target.value);
+                      if (e.target.value && !validateWebhookUrl(e.target.value)) {
+                        setWebhookUrlError("Debe ser una URL válida (https://...)");
+                      } else {
+                        setWebhookUrlError("");
+                      }
+                    }}
+                    placeholder="https://tu-servicio.com/webhooks"
+                  />
+                  {webhookUrlError && (
+                    <p className="text-sm text-red-500">{webhookUrlError}</p>
+                  )}
                 </div>
                 <Button
                   onClick={() => createWebhookMutation.mutate()}
                   disabled={
-                    createWebhookMutation.isPending || !eventTypes || !webhookUrl
+                    createWebhookMutation.isPending || selectedEventTypes.length === 0 || !webhookUrl || !!webhookUrlError
                   }
                 >
                   Crear suscripción
