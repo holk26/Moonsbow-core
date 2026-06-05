@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model LocalUser {
+  id        String   @id @db.Uuid
+  email     String
+  fullName  String?
+  tenantId  String   @db.Uuid
+  isActive  Boolean  @default(true)
+  syncedAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("local_users")
+}
+
+model LocalTenant {
+  id       String  @id @db.Uuid
+  name     String
+  slug     String  @unique
+  plan     String  @default("free")
+  isActive Boolean @default(true)
+  syncedAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("local_tenants")
+}
+
+model LocalSubscription {
+  id        String   @id @db.Uuid
+  tenantId  String   @db.Uuid
+  plan      String
+  status    String
+  startedAt DateTime? @db.Timestamptz(6)
+  expiresAt DateTime? @db.Timestamptz(6)
+  syncedAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("local_subscriptions")
+}
+
+model TodoCategory {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  color     String   @default("#3b82f6")
+  tenantId  String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  todos     Todo[]
+
+  @@map("todo_categories")
+}
+
+model Todo {
+  id          String        @id @default(uuid()) @db.Uuid
+  title       String
+  description String?
+  status      TodoStatus    @default(pending)
+  priority    TodoPriority  @default(medium)
+  dueDate     DateTime?     @db.Timestamptz(6)
+  categoryId  String?       @db.Uuid
+  category    TodoCategory? @relation(fields: [categoryId], references: [id])
+  tenantId    String        @db.Uuid
+  createdBy   String        @db.Uuid
+  assignedTo  String?       @db.Uuid
+  createdAt   DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdBy])
+  @@map("todos")
+}
+
+enum TodoStatus {
+  pending
+  in_progress
+  done
+  archived
+}
+
+enum TodoPriority {
+  low
+  medium
+  high
+  urgent
+}
