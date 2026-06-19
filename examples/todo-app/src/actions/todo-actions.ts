@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { verifyToken } from "@/lib/auth";
+import { verifyToken, getTenantId } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -33,8 +33,9 @@ export async function getTodos(filters?: {
 }) {
   const user = await getCurrentUser();
 
+  const tenantId = getTenantId(user);
   const where: Record<string, unknown> = {
-    tenantId: user.tenantId,
+    tenantId,
   };
 
   if (filters?.status && filters.status !== "all") {
@@ -68,7 +69,7 @@ export async function createTodo(data: z.infer<typeof todoSchema>) {
     data: {
       ...parsed,
       dueDate: parsed.dueDate ? new Date(parsed.dueDate) : null,
-      tenantId: user.tenantId,
+      tenantId: getTenantId(user),
       createdBy: user.id,
     },
     include: { category: true },
@@ -85,7 +86,7 @@ export async function updateTodo(
   const user = await getCurrentUser();
 
   const todo = await prisma.todo.update({
-    where: { id, tenantId: user.tenantId },
+    where: { id, tenantId: getTenantId(user) },
     data: {
       ...data,
       dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
@@ -101,7 +102,7 @@ export async function deleteTodo(id: string) {
   const user = await getCurrentUser();
 
   await prisma.todo.delete({
-    where: { id, tenantId: user.tenantId },
+    where: { id, tenantId: getTenantId(user) },
   });
 
   revalidatePath("/");
@@ -111,7 +112,7 @@ export async function getCategories() {
   const user = await getCurrentUser();
 
   return prisma.todoCategory.findMany({
-    where: { tenantId: user.tenantId },
+    where: { tenantId: getTenantId(user) },
     orderBy: { name: "asc" },
   });
 }
@@ -126,7 +127,7 @@ export async function createCategory(data: {
     data: {
       name: data.name,
       color: data.color || "#3b82f6",
-      tenantId: user.tenantId,
+      tenantId: getTenantId(user),
     },
   });
 
@@ -138,15 +139,15 @@ export async function getStats() {
   const user = await getCurrentUser();
 
   const [total, pending, done, urgent] = await Promise.all([
-    prisma.todo.count({ where: { tenantId: user.tenantId } }),
+    prisma.todo.count({ where: { tenantId: getTenantId(user) } }),
     prisma.todo.count({
-      where: { tenantId: user.tenantId, status: "pending" },
+      where: { tenantId: getTenantId(user), status: "pending" },
     }),
     prisma.todo.count({
-      where: { tenantId: user.tenantId, status: "done" },
+      where: { tenantId: getTenantId(user), status: "done" },
     }),
     prisma.todo.count({
-      where: { tenantId: user.tenantId, priority: "urgent" },
+      where: { tenantId: getTenantId(user), priority: "urgent" },
     }),
   ]);
 

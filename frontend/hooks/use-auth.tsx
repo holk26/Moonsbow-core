@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import type { UserResponse } from "@/lib/types";
 
@@ -21,7 +21,7 @@ const DEV_TOKEN = "dev-token-moonsbow-local-development";
 interface AuthContextType {
   user: UserResponse | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, redirectUrl?: string | null) => Promise<void>;
   register: (email: string, password: string, full_name?: string) => Promise<void>;
   logout: () => void;
 }
@@ -48,8 +48,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
-    if (IS_DEV && email === "dev@moonsbow.com" && password === "dev123") {
+  const login = async (email: string, password: string, redirectUrl?: string | null) => {
+    // If a satellite app requested a redirect, always perform a real login
+    // so it receives a valid signed JWT it can verify offline.
+    const shouldRedirectBack = redirectUrl && redirectUrl.startsWith("http");
+
+    if (IS_DEV && email === "dev@moonsbow.com" && password === "dev123" && !shouldRedirectBack) {
       localStorage.setItem("access_token", DEV_TOKEN);
       setUser(DEV_USER);
       router.push("/");
@@ -58,6 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const data = await api.login({ email, password });
     localStorage.setItem("access_token", data.access_token);
+
+    if (shouldRedirectBack) {
+      const callbackUrl = new URL("/auth/callback", redirectUrl);
+      callbackUrl.searchParams.set("token", data.access_token);
+      window.location.href = callbackUrl.toString();
+      return;
+    }
+
     const me = await api.me();
     setUser(me);
     router.push("/");

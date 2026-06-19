@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useSearchParams } from "next/navigation";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -17,8 +18,10 @@ const loginSchema = z.object({
 
 type LoginForm = z.infer<typeof loginSchema>;
 
-export default function LoginPage() {
+function LoginFormCard() {
   const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get("redirect");
   const [error, setError] = useState("");
 
   const {
@@ -32,7 +35,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setError("");
     try {
-      await login(data.email, data.password);
+      await login(data.email, data.password, redirectUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión");
     }
@@ -84,5 +87,13 @@ export default function LoginPage() {
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
+      <LoginFormCard />
+    </Suspense>
   );
 }

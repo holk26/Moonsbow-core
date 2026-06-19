@@ -23,7 +23,13 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
 
     # Comma-separated list of allowed CORS origins; defaults to localhost for development
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000", "http://localhost:5173"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:3002",
+        "http://localhost:3010",
+        "http://localhost:8000",
+        "http://localhost:5173",
+    ]
 
     DATABASE_URL: str = "postgresql+asyncpg://moonsbow:moonsbow@localhost:5432/moonsbow"
     REDIS_URL: str = "redis://localhost:6379/0"

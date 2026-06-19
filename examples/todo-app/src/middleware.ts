@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifyToken } from "@/lib/auth";
+import { verifyToken, getTenantId } from "@/lib/auth";
 
-const PUBLIC_PATHS = ["/login", "/api/health", "/api/webhooks"];
+const PUBLIC_PATHS = ["/login", "/auth/callback", "/api/health", "/api/webhooks"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -31,8 +31,8 @@ export async function middleware(request: NextRequest) {
   // Add user data to headers for Server Actions
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-user-id", user.id);
-  requestHeaders.set("x-tenant-id", user.tenantId);
-  requestHeaders.set("x-tenant-plan", user.tenantPlan);
+  requestHeaders.set("x-tenant-id", getTenantId(user));
+  requestHeaders.set("x-tenant-plan", user.tenantPlan ?? "");
 
   return NextResponse.next({
     request: { headers: requestHeaders },

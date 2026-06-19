@@ -85,17 +85,20 @@ class AuthService:
             )
 
         # Build extra claims from user's tenant for offline validation
-        extra_claims = {}
+        extra_claims: dict[str, str] = {
+            "email": user.email,
+            "name": user.full_name or "",
+        }
         if user.tenant_id:
             from backend.modules.tenants.repository import TenantRepository
             tenant_repo = TenantRepository(self.db)
             tenant = await tenant_repo.get_by_id(user.tenant_id)
             if tenant:
-                extra_claims = {
+                extra_claims.update({
                     "tenant_id": str(tenant.id),
                     "tenant_slug": tenant.slug,
                     "tenant_plan": tenant.plan,
-                }
+                })
 
         token = create_access_token(
             data={"sub": str(user.id)},
