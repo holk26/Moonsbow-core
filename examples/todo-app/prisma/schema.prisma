@@ -23,7 +23,7 @@ model LocalTenant {
   name     String
   slug     String  @unique
   plan     String  @default("free")
-  isActive Boolean  @default(true)
+  isActive Boolean @default(true)
   syncedAt DateTime @default(now()) @db.Timestamptz(6)
 
   @@map("local_tenants")
@@ -55,6 +55,8 @@ model TodoCategory {
 enum TodoSource {
   USER
   ASSISTANT
+
+  @@map("todo_source")
 }
 
 model AssistantApiKey {
