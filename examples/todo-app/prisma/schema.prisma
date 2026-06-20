@@ -42,7 +42,7 @@ model LocalSubscription {
 }
 
 model TodoCategory {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name      String
   color     String   @default("#3b82f6")
   tenantId  String   @db.Uuid
@@ -76,7 +76,7 @@ model AssistantApiKey {
 }
 
 model Todo {
-  id                String           @id @default(uuid()) @db.Uuid
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title             String
   description       String?
   status            TodoStatus       @default(pending)
