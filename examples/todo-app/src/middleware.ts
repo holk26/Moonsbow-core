@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyToken, getTenantId } from "@/lib/auth";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/api/health", "/api/webhooks"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/auth/callback",
+  "/api/health",
+  "/api/webhooks",
+  "/api/mcp",
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
