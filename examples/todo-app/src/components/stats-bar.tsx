@@ -5,12 +5,20 @@ import { getStats } from "@/actions/todo-actions";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckSquare, Clock, AlertCircle, ListTodo } from "lucide-react";
 
-export function StatsBar() {
-  const [stats, setStats] = useState({ total: 0, pending: 0, done: 0, urgent: 0 });
+interface StatsBarProps {
+  stats?: { total: number; pending: number; in_progress: number; done: number; urgent: number };
+}
+
+export function StatsBar({ stats: propStats }: StatsBarProps) {
+  const [internalStats, setInternalStats] = useState({ total: 0, pending: 0, in_progress: 0, done: 0, urgent: 0 });
 
   useEffect(() => {
-    getStats().then(setStats);
-  }, []);
+    if (!propStats) {
+      getStats().then(setInternalStats);
+    }
+  }, [propStats]);
+
+  const stats = propStats ?? internalStats;
 
   const items = [
     { label: "Total", value: stats.total, icon: ListTodo },
