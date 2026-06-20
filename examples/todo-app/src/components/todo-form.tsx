@@ -142,10 +142,10 @@ export function TodoForm({ todo, categories, onSuccess, onCancel }: TodoFormProp
         </div>
       </div>
       <div className="mt-4 flex flex-col-reverse gap-2 md:flex-row md:justify-end md:gap-0 md:space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel} className="w-full md:w-auto">
           Cancelar
         </Button>
-        <Button type="submit" disabled={loading || !title.trim()}>
+        <Button type="submit" disabled={loading || !title.trim()} className="w-full md:w-auto">
           {todo ? "Guardar" : "Crear"}
         </Button>
       </div>

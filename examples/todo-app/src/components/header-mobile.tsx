@@ -77,7 +77,7 @@ export function HeaderMobile({ user }: { user: UserData | null }) {
           </Button>
 
           {open && user && (
-            <div className="absolute right-0 mt-2 w-56 rounded-md border bg-background p-3 shadow-lg">
+            <div className="absolute right-0 z-50 mt-2 w-56 rounded-md border bg-background p-3 shadow-lg">
               <div className="mb-3">
                 <p className="text-sm font-medium">{user.name}</p>
                 <p className="text-xs text-muted-foreground">{user.email}</p>
