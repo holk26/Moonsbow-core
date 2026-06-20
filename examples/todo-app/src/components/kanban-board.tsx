@@ -6,6 +6,7 @@ import { TodoModal } from "@/components/todo-modal";
 import { TodoFilters } from "@/components/todo-filters";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { TodoFormData } from "@/lib/todo-types";
 import { getTodos, getCategories } from "@/actions/todo-actions";
 
 interface Todo {
@@ -89,7 +90,15 @@ export function KanbanBoard() {
       <TodoModal
         open={modalOpen}
         onOpenChange={setModalOpen}
-        todo={selectedTodo}
+        todo={
+          selectedTodo
+            ? {
+                ...selectedTodo,
+                status: selectedTodo.status as TodoFormData["status"],
+                priority: selectedTodo.priority as TodoFormData["priority"],
+              }
+            : undefined
+        }
         categories={categories}
         onSuccess={loadData}
       />
