@@ -1,5 +1,19 @@
 const WINDOW_MS = 60_000;
-const MAX_REQUESTS = Number(process.env.ASSISTANT_RATE_LIMIT || "100");
+
+function parseLimit(): number {
+  const raw = process.env.ASSISTANT_RATE_LIMIT;
+  if (!raw) return 100;
+  const value = Number(raw);
+  if (Number.isNaN(value) || value <= 0) {
+    console.warn(
+      `ASSISTANT_RATE_LIMIT "${raw}" is invalid; falling back to 100`
+    );
+    return 100;
+  }
+  return value;
+}
+
+const MAX_REQUESTS = parseLimit();
 
 interface Bucket {
   count: number;
@@ -8,11 +22,21 @@ interface Bucket {
 
 const buckets = new Map<string, Bucket>();
 
+function cleanupExpired(now: number) {
+  for (const [key, bucket] of buckets.entries()) {
+    if (now >= bucket.resetAt) {
+      buckets.delete(key);
+    }
+  }
+}
+
 export function checkRateLimit(keyId: string): {
   allowed: boolean;
   retryAfter: number;
 } {
   const now = Date.now();
+  cleanupExpired(now);
+
   const bucket = buckets.get(keyId);
 
   if (!bucket || now >= bucket.resetAt) {
