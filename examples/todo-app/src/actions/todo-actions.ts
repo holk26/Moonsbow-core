@@ -1,29 +1,32 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
 import { verifyToken, getTenantId } from "@/lib/auth";
 import { cookies } from "next/headers";
-import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import {
+  createTodo as createTodoService,
+  updateTodo as updateTodoService,
+  deleteTodo as deleteTodoService,
+  createCategory as createCategoryService,
+  listTodos,
+  listCategories,
+  getStats as getStatsService,
+  TodoSource,
+  TodoInput,
+} from "@/lib/todo-service";
 
-async function getCurrentUser() {
+async function getUserContext() {
   const token = (await cookies()).get("token")?.value;
   if (!token) throw new Error("Unauthorized");
   const user = await verifyToken(token);
   if (!user) throw new Error("Unauthorized");
-  return user;
+  return {
+    tenantId: getTenantId(user),
+    userId: user.id,
+    source: TodoSource.USER,
+    assistantApiKeyId: null,
+  };
 }
-
-const todoSchema = z.object({
-  title: z.string().min(1).max(255),
-  description: z.string().optional(),
-  status: z
-    .enum(["pending", "in_progress", "done", "archived"])
-    .optional(),
-  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
-  dueDate: z.string().datetime().optional(),
-  categoryId: z.string().uuid().optional(),
-});
 
 export async function getTodos(filters?: {
   status?: string;
@@ -31,128 +34,43 @@ export async function getTodos(filters?: {
   categoryId?: string;
   search?: string;
 }) {
-  const user = await getCurrentUser();
-
-  const tenantId = getTenantId(user);
-  const where: Record<string, unknown> = {
-    tenantId,
-  };
-
-  if (filters?.status && filters.status !== "all") {
-    where.status = filters.status;
-  }
-  if (filters?.priority && filters.priority !== "all") {
-    where.priority = filters.priority;
-  }
-  if (filters?.categoryId) {
-    where.categoryId = filters.categoryId;
-  }
-  if (filters?.search) {
-    where.OR = [
-      { title: { contains: filters.search, mode: "insensitive" } },
-      { description: { contains: filters.search, mode: "insensitive" } },
-    ];
-  }
-
-  return prisma.todo.findMany({
-    where,
-    include: { category: true },
-    orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
-  });
+  const ctx = await getUserContext();
+  return listTodos(ctx, filters);
 }
 
-export async function createTodo(data: z.infer<typeof todoSchema>) {
-  const user = await getCurrentUser();
-  const parsed = todoSchema.parse(data);
-
-  const todo = await prisma.todo.create({
-    data: {
-      ...parsed,
-      dueDate: parsed.dueDate ? new Date(parsed.dueDate) : null,
-      tenantId: getTenantId(user),
-      createdBy: user.id,
-    },
-    include: { category: true },
-  });
-
+export async function createTodo(data: TodoInput) {
+  const ctx = await getUserContext();
+  const todo = await createTodoService(ctx, data);
   revalidatePath("/");
   return todo;
 }
 
-export async function updateTodo(
-  id: string,
-  data: Partial<z.infer<typeof todoSchema>>
-) {
-  const user = await getCurrentUser();
-
-  const todo = await prisma.todo.update({
-    where: { id, tenantId: getTenantId(user) },
-    data: {
-      ...data,
-      dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-    },
-    include: { category: true },
-  });
-
+export async function updateTodo(id: string, data: Partial<TodoInput>) {
+  const ctx = await getUserContext();
+  const todo = await updateTodoService(ctx, id, data);
   revalidatePath("/");
   return todo;
 }
 
 export async function deleteTodo(id: string) {
-  const user = await getCurrentUser();
-
-  await prisma.todo.delete({
-    where: { id, tenantId: getTenantId(user) },
-  });
-
+  const ctx = await getUserContext();
+  await deleteTodoService(ctx, id);
   revalidatePath("/");
 }
 
 export async function getCategories() {
-  const user = await getCurrentUser();
-
-  return prisma.todoCategory.findMany({
-    where: { tenantId: getTenantId(user) },
-    orderBy: { name: "asc" },
-  });
+  const ctx = await getUserContext();
+  return listCategories(ctx);
 }
 
-export async function createCategory(data: {
-  name: string;
-  color?: string;
-}) {
-  const user = await getCurrentUser();
-
-  const category = await prisma.todoCategory.create({
-    data: {
-      name: data.name,
-      color: data.color || "#3b82f6",
-      tenantId: getTenantId(user),
-    },
-  });
-
+export async function createCategory(data: { name: string; color?: string }) {
+  const ctx = await getUserContext();
+  const category = await createCategoryService(ctx, data);
   revalidatePath("/");
   return category;
 }
 
 export async function getStats() {
-  const user = await getCurrentUser();
-
-  const [total, pending, in_progress, done, urgent] = await Promise.all([
-    prisma.todo.count({ where: { tenantId: getTenantId(user) } }),
-    prisma.todo.count({
-      where: { tenantId: getTenantId(user), status: "pending" },
-    }),
-    prisma.todo.count({
-      where: { tenantId: getTenantId(user), status: "in_progress" },
-    }),
-    prisma.todo.count({
-      where: { tenantId: getTenantId(user), status: "done" },
-    }),
-    prisma.todo.count({
-      where: { tenantId: getTenantId(user), priority: "urgent" },
-    }),
-  ]);
-
-  return { total, pending, in_progress, done, urgent };
+  const ctx = await getUserContext();
+  return getStatsService(ctx);
 }
