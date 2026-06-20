@@ -5,19 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
-import { DialogFooter } from "@/components/ui/dialog";
+import { TodoFormData } from "@/lib/todo-types";
+
 import { createTodo, updateTodo } from "@/actions/todo-actions";
 
 interface TodoFormProps {
-  todo?: {
-    id: string;
-    title: string;
-    description: string | null;
-    status: string;
-    priority: string;
-    dueDate: Date | null;
-    categoryId: string | null;
-  };
+  todo?: TodoFormData;
   categories: { id: string; name: string }[];
   onSuccess: () => void;
   onCancel: () => void;
@@ -27,8 +20,10 @@ export function TodoForm({ todo, categories, onSuccess, onCancel }: TodoFormProp
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState(todo?.title || "");
   const [description, setDescription] = useState(todo?.description || "");
-  const [status, setStatus] = useState(todo?.status || "pending");
-  const [priority, setPriority] = useState(todo?.priority || "medium");
+  const [status, setStatus] = useState<TodoFormData["status"]>(todo?.status || "pending");
+  const [priority, setPriority] = useState<TodoFormData["priority"]>(
+    todo?.priority || "medium"
+  );
   const [dueDate, setDueDate] = useState(
     todo?.dueDate ? new Date(todo.dueDate).toISOString().slice(0, 16) : ""
   );
@@ -38,20 +33,20 @@ export function TodoForm({ todo, categories, onSuccess, onCancel }: TodoFormProp
     e.preventDefault();
     setLoading(true);
 
-    const data = {
+    const payload = {
       title,
       description: description || undefined,
-      status: status as "pending" | "in_progress" | "done" | "archived",
-      priority: priority as "low" | "medium" | "high" | "urgent",
-      dueDate: dueDate || undefined,
+      status,
+      priority,
+      dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
       categoryId: categoryId || undefined,
     };
 
     try {
       if (todo) {
-        await updateTodo(todo.id, data);
+        await updateTodo(todo.id!, payload);
       } else {
-        await createTodo(data);
+        await createTodo(payload);
       }
       onSuccess();
     } catch (error) {
@@ -64,8 +59,11 @@ export function TodoForm({ todo, categories, onSuccess, onCancel }: TodoFormProp
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="text-sm font-medium">Título *</label>
+        <label htmlFor="todo-title" className="text-sm font-medium">
+          Título *
+        </label>
         <Input
+          id="todo-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Nombre de la tarea"
@@ -73,19 +71,25 @@ export function TodoForm({ todo, categories, onSuccess, onCancel }: TodoFormProp
         />
       </div>
       <div>
-        <label className="text-sm font-medium">Descripción</label>
+        <label htmlFor="todo-description" className="text-sm font-medium">
+          Descripción
+        </label>
         <Textarea
+          id="todo-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Detalles de la tarea..."
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="text-sm font-medium">Estado</label>
+          <label htmlFor="todo-status" className="text-sm font-medium">
+            Estado
+          </label>
           <Select
+            id="todo-status"
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            onChange={(e) => setStatus(e.target.value as TodoFormData["status"])}
             options={[
               { value: "pending", label: "Pendiente" },
               { value: "in_progress", label: "En progreso" },
@@ -94,10 +98,13 @@ export function TodoForm({ todo, categories, onSuccess, onCancel }: TodoFormProp
           />
         </div>
         <div>
-          <label className="text-sm font-medium">Prioridad</label>
+          <label htmlFor="todo-priority" className="text-sm font-medium">
+            Prioridad
+          </label>
           <Select
+            id="todo-priority"
             value={priority}
-            onChange={(e) => setPriority(e.target.value)}
+            onChange={(e) => setPriority(e.target.value as TodoFormData["priority"])}
             options={[
               { value: "low", label: "Baja" },
               { value: "medium", label: "Media" },
@@ -107,18 +114,24 @@ export function TodoForm({ todo, categories, onSuccess, onCancel }: TodoFormProp
           />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
-          <label className="text-sm font-medium">Fecha límite</label>
+          <label htmlFor="todo-due-date" className="text-sm font-medium">
+            Fecha límite
+          </label>
           <Input
+            id="todo-due-date"
             type="datetime-local"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />
         </div>
         <div>
-          <label className="text-sm font-medium">Categoría</label>
+          <label htmlFor="todo-category" className="text-sm font-medium">
+            Categoría
+          </label>
           <Select
+            id="todo-category"
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
             options={[
@@ -128,14 +141,14 @@ export function TodoForm({ todo, categories, onSuccess, onCancel }: TodoFormProp
           />
         </div>
       </div>
-      <DialogFooter>
+      <div className="mt-4 flex flex-col-reverse gap-2 md:flex-row md:justify-end md:gap-0 md:space-x-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
         <Button type="submit" disabled={loading || !title.trim()}>
           {todo ? "Guardar" : "Crear"}
         </Button>
-      </DialogFooter>
+      </div>
     </form>
   );
 }

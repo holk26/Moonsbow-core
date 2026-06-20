@@ -20,15 +20,15 @@ export function StatsBar() {
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
       {items.map((item) => (
         <Card key={item.label}>
-          <CardContent className="flex items-center justify-between p-4">
+          <CardContent className="flex items-center justify-between p-3 md:p-4">
             <div>
-              <p className="text-2xl font-bold">{item.value}</p>
+              <p className="text-xl font-bold md:text-2xl">{item.value}</p>
               <p className="text-xs text-muted-foreground">{item.label}</p>
             </div>
-            <item.icon className="h-5 w-5 text-muted-foreground" />
+            <item.icon className="h-4 w-4 text-muted-foreground md:h-5 md:w-5" aria-hidden="true" />
           </CardContent>
         </Card>
       ))}
