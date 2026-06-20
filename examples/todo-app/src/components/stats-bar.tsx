@@ -31,12 +31,12 @@ export function StatsBar({ stats: propStats }: StatsBarProps) {
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
       {items.map((item) => (
         <Card key={item.label}>
-          <CardContent className="flex items-center justify-between p-3 md:p-4">
-            <div>
+          <CardContent className="flex items-center justify-between gap-2 p-3 md:p-4">
+            <div className="min-w-0">
               <p className="text-xl font-bold md:text-2xl">{item.value}</p>
-              <p className="text-xs text-muted-foreground">{item.label}</p>
+              <p className="truncate text-xs text-muted-foreground">{item.label}</p>
             </div>
-            <item.icon className="h-4 w-4 text-muted-foreground md:h-5 md:w-5" aria-hidden="true" />
+            <item.icon className="h-4 w-4 flex-shrink-0 text-muted-foreground md:h-5 md:w-5" aria-hidden="true" />
           </CardContent>
         </Card>
       ))}

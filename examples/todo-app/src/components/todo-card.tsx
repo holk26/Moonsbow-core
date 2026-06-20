@@ -110,11 +110,13 @@ export function TodoCard({
         onContextMenu={handleContextMenu}
         className="min-h-11 cursor-pointer select-none p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <div className="flex items-start justify-between gap-2 md:pr-10">
-          <h4 className="text-sm font-medium">{todo.title}</h4>
+        <div className="flex min-w-0 items-start justify-between gap-2 md:pr-10">
+          <h4 className="min-w-0 flex-1 break-words text-sm font-medium">
+            {todo.title}
+          </h4>
           <Badge
             variant="secondary"
-            className={cn("text-xs", priorityColors[todo.priority])}
+            className={cn("flex-shrink-0 text-xs", priorityColors[todo.priority])}
           >
             <Flag className="mr-1 h-3 w-3" />
             {priorityLabels[todo.priority]}
@@ -125,7 +127,7 @@ export function TodoCard({
             {todo.description}
           </p>
         )}
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           {todo.category && (
             <span
               className="rounded-full px-2 py-0.5 text-xs text-white"
