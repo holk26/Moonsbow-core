@@ -328,20 +328,24 @@ export async function POST(req: Request) {
     return jsonResponse(400, { error: "Invalid JSON body" }, origin);
   }
 
+  if (
+    typeof message !== "object" ||
+    message === null ||
+    (message as Record<string, unknown>).jsonrpc !== "2.0"
+  ) {
+    return jsonResponse(
+      400,
+      { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Invalid Request" } },
+      origin
+    );
+  }
+
   const rpc = message as {
-    jsonrpc?: string;
+    jsonrpc: string;
     id?: string | number | null;
     method?: string;
     params?: unknown;
   };
-
-  if (rpc.jsonrpc !== "2.0") {
-    return jsonResponse(
-      400,
-      { jsonrpc: "2.0", id: rpc.id ?? null, error: { code: -32600, message: "Invalid Request" } },
-      origin
-    );
-  }
 
   try {
     const result = await handleMcpMethod(ctx, rpc.method, rpc.params);
@@ -355,10 +359,24 @@ export async function POST(req: Request) {
       origin
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
+    let code = -32603;
+    let message = "Internal error";
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      typeof (error as { code: unknown }).code === "number" &&
+      "message" in error &&
+      typeof (error as { message: unknown }).message === "string"
+    ) {
+      code = (error as { code: number }).code;
+      message = (error as { message: string }).message;
+    } else if (error instanceof Error) {
+      message = error.message;
+    }
     return jsonResponse(
       200,
-      { jsonrpc: "2.0", id: rpc.id ?? null, error: { code: -32603, message } },
+      { jsonrpc: "2.0", id: rpc.id ?? null, error: { code, message } },
       origin
     );
   }
@@ -390,6 +408,10 @@ async function handleMcpMethod(
     return undefined;
   }
 
+  if (method === "ping") {
+    return {};
+  }
+
   if (method === "tools/list") {
     return {
       tools: tools.map(({ name, description, inputSchema }) => ({
@@ -401,16 +423,43 @@ async function handleMcpMethod(
   }
 
   if (method === "tools/call") {
-    const callParams = z
-      .object({ name: z.string(), arguments: z.record(z.unknown()).default({}) })
-      .parse(params);
+    let callParams: { name: string; arguments: Record<string, unknown> };
+    try {
+      callParams = z
+        .object({
+          name: z.string(),
+          arguments: z.record(z.unknown()).default({}),
+        })
+        .parse(params);
+    } catch {
+      throw { code: -32602, message: "Invalid params" };
+    }
     const tool = tools.find((t) => t.name === callParams.name);
     if (!tool) {
-      throw new Error(`Tool not found: ${callParams.name}`);
+      throw { code: -32601, message: `Tool not found: ${callParams.name}` };
     }
-    const parsedArgs = tool.paramsSchema.parse(callParams.arguments);
-    return tool.handler(ctx, parsedArgs as never);
+    try {
+      const parsedArgs = tool.paramsSchema.parse(callParams.arguments);
+      return tool.handler(ctx, parsedArgs as never);
+    } catch {
+      throw { code: -32602, message: "Invalid params" };
+    }
   }
 
-  throw new Error(`Method not found: ${method}`);
+  throw { code: -32601, message: `Method not found: ${method}` };
+}
+
+export async function GET(req: Request) {
+  const origin = req.headers.get("origin") || "*";
+  return jsonResponse(405, { error: "Method Not Allowed" }, origin);
+}
+
+export async function PUT(req: Request) {
+  const origin = req.headers.get("origin") || "*";
+  return jsonResponse(405, { error: "Method Not Allowed" }, origin);
+}
+
+export async function DELETE(req: Request) {
+  const origin = req.headers.get("origin") || "*";
+  return jsonResponse(405, { error: "Method Not Allowed" }, origin);
 }
