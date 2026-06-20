@@ -138,10 +138,13 @@ export async function createCategory(data: {
 export async function getStats() {
   const user = await getCurrentUser();
 
-  const [total, pending, done, urgent] = await Promise.all([
+  const [total, pending, in_progress, done, urgent] = await Promise.all([
     prisma.todo.count({ where: { tenantId: getTenantId(user) } }),
     prisma.todo.count({
       where: { tenantId: getTenantId(user), status: "pending" },
+    }),
+    prisma.todo.count({
+      where: { tenantId: getTenantId(user), status: "in_progress" },
     }),
     prisma.todo.count({
       where: { tenantId: getTenantId(user), status: "done" },
@@ -151,5 +154,5 @@ export async function getStats() {
     }),
   ]);
 
-  return { total, pending, done, urgent };
+  return { total, pending, in_progress, done, urgent };
 }

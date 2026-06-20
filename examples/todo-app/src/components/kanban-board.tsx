@@ -7,12 +7,14 @@ import { TodoFilters } from "@/components/todo-filters";
 import { KanbanTabs } from "@/components/kanban-tabs";
 import { MobileFAB } from "@/components/mobile-fab";
 import { TodoActionSheet } from "@/components/todo-action-sheet";
+import { StatsBar } from "@/components/stats-bar";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { TodoFormData } from "@/lib/todo-types";
 import {
   getTodos,
   getCategories,
+  getStats,
   deleteTodo,
   updateTodo,
 } from "@/actions/todo-actions";
@@ -65,11 +67,11 @@ const priorities: TodoFormData["priority"][] = [
 ];
 
 function isStatus(s: string): s is TodoFormData["status"] {
-  return statuses.includes(s as TodoFormData["status"]);
+  return statuses.some((status) => status === s);
 }
 
 function isPriority(p: string): p is TodoFormData["priority"] {
-  return priorities.includes(p as TodoFormData["priority"]);
+  return priorities.some((priority) => priority === p);
 }
 
 function toTodoFormData(todo: Todo): TodoFormData {
@@ -92,18 +94,21 @@ export function KanbanBoard() {
   const [selectedTodo, setSelectedTodo] = useState<Todo | undefined>();
   const [actionTodo, setActionTodo] = useState<Todo | undefined>();
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ total: 0, pending: 0, in_progress: 0, done: 0, urgent: 0 });
 
   const loadData = useCallback(
     async (ignoreRef: { current: boolean } = { current: false }) => {
       setLoading(true);
       try {
-        const [todoData, categoryData] = await Promise.all([
+        const [todoData, categoryData, statsData] = await Promise.all([
           getTodos(filters),
           getCategories(),
+          getStats(),
         ]);
         if (ignoreRef.current) return;
         setTodos(Array.isArray(todoData) ? todoData.map(toTodo) : []);
         setCategories(categoryData);
+        setStats(statsData);
       } finally {
         if (!ignoreRef.current) {
           setLoading(false);
@@ -167,6 +172,7 @@ export function KanbanBoard() {
 
   return (
     <div className="space-y-4">
+      <StatsBar stats={stats} />
       <div className="flex items-center justify-between">
         <TodoFilters filters={filters} onChange={setFilters} />
         <Button onClick={handleNewTodo} className="hidden md:flex">
