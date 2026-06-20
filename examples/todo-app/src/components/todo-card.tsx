@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Calendar, Flag } from "lucide-react";
+import { TodoCardMenu } from "./todo-card-menu";
 
 interface TodoCardProps {
   todo: {
@@ -16,6 +17,9 @@ interface TodoCardProps {
   };
   onClick: () => void;
   onLongPress?: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
+  onMove?: () => void;
 }
 
 const priorityColors: Record<string, string> = {
@@ -32,9 +36,26 @@ const priorityLabels: Record<string, string> = {
   urgent: "Urgente",
 };
 
-export function TodoCard({ todo, onClick, onLongPress }: TodoCardProps) {
+export function TodoCard({
+  todo,
+  onClick,
+  onLongPress,
+  onEdit,
+  onDelete,
+  onMove,
+}: TodoCardProps) {
+  const showMenu = Boolean(onEdit || onDelete || onMove);
+
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const triggeredRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   const startLongPress = () => {
     triggeredRef.current = false;
@@ -49,7 +70,6 @@ export function TodoCard({ todo, onClick, onLongPress }: TodoCardProps) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    triggeredRef.current = false;
   };
 
   const handleClick = () => {
@@ -75,51 +95,63 @@ export function TodoCard({ todo, onClick, onLongPress }: TodoCardProps) {
   };
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      onMouseDown={startLongPress}
-      onMouseUp={cancelLongPress}
-      onMouseLeave={cancelLongPress}
-      onTouchStart={startLongPress}
-      onTouchMove={cancelLongPress}
-      onTouchEnd={cancelLongPress}
-      onContextMenu={handleContextMenu}
-      className="cursor-pointer select-none rounded-lg border bg-background p-3 shadow-sm transition-shadow hover:shadow-md"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <h4 className="text-sm font-medium">{todo.title}</h4>
-        <Badge
-          variant="secondary"
-          className={cn("text-xs", priorityColors[todo.priority])}
-        >
-          <Flag className="mr-1 h-3 w-3" />
-          {priorityLabels[todo.priority]}
-        </Badge>
-      </div>
-      {todo.description && (
-        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-          {todo.description}
-        </p>
-      )}
-      <div className="mt-2 flex items-center gap-2">
-        {todo.category && (
-          <span
-            className="rounded-full px-2 py-0.5 text-xs text-white"
-            style={{ backgroundColor: todo.category.color }}
+    <div className="relative rounded-lg border bg-background shadow-sm transition-shadow hover:shadow-md">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
+        onMouseDown={startLongPress}
+        onMouseUp={cancelLongPress}
+        onMouseLeave={cancelLongPress}
+        onTouchStart={startLongPress}
+        onTouchMove={cancelLongPress}
+        onTouchEnd={cancelLongPress}
+        onContextMenu={handleContextMenu}
+        className="min-h-11 cursor-pointer select-none p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <div className="flex items-start justify-between gap-2 md:pr-10">
+          <h4 className="text-sm font-medium">{todo.title}</h4>
+          <Badge
+            variant="secondary"
+            className={cn("text-xs", priorityColors[todo.priority])}
           >
-            {todo.category.name}
-          </span>
+            <Flag className="mr-1 h-3 w-3" />
+            {priorityLabels[todo.priority]}
+          </Badge>
+        </div>
+        {todo.description && (
+          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+            {todo.description}
+          </p>
         )}
-        {todo.dueDate && (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            {todo.dueDate.toLocaleDateString("es-ES")}
-          </span>
-        )}
+        <div className="mt-2 flex items-center gap-2">
+          {todo.category && (
+            <span
+              className="rounded-full px-2 py-0.5 text-xs text-white"
+              style={{ backgroundColor: todo.category.color }}
+            >
+              {todo.category.name}
+            </span>
+          )}
+          {todo.dueDate && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Calendar className="h-3 w-3" />
+              {todo.dueDate.toLocaleDateString("es-ES")}
+            </span>
+          )}
+        </div>
       </div>
+
+      {showMenu && (
+        <div className="absolute right-1 top-1 z-10 hidden md:block">
+          <TodoCardMenu
+            onEdit={onEdit ?? (() => {})}
+            onDelete={onDelete ?? (() => {})}
+            onMove={onMove}
+          />
+        </div>
+      )}
     </div>
   );
 }
