@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LogOut, CheckSquare, User } from "lucide-react";
+import { LogOut, CheckSquare, User, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 
@@ -87,6 +87,18 @@ export function HeaderMobile({ user }: { user: UserData | null }) {
                   {user.tenantPlan}
                 </span>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full justify-start gap-2 mb-2"
+                onClick={() => {
+                  setOpen(false);
+                  router.push("/settings");
+                }}
+              >
+                <Settings className="h-4 w-4" />
+                Configuración
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

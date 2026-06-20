@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogOut, CheckSquare } from "lucide-react";
+import { LogOut, CheckSquare, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { HeaderMobile } from "./header-mobile";
@@ -58,6 +58,14 @@ export function Header() {
                 <p className="text-sm font-medium">{user.name}</p>
                 <p className="text-xs text-muted-foreground">{user.email}</p>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push("/settings")}
+                aria-label="Configuración"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
               <Button variant="ghost" size="icon" onClick={handleLogout} aria-label="Cerrar sesión">
                 <LogOut className="h-4 w-4" />
               </Button>
