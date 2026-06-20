@@ -17,9 +17,9 @@ import {
 
 async function getUserContext() {
   const token = (await cookies()).get("token")?.value;
-  if (!token) throw new Error("Unauthorized");
+  if (!token) throw new Error("No autorizado");
   const user = await verifyToken(token);
-  if (!user) throw new Error("Unauthorized");
+  if (!user) throw new Error("No autorizado");
   return {
     tenantId: getTenantId(user),
     userId: user.id,
