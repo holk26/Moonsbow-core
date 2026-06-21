@@ -28,6 +28,7 @@ function ModalTodoForm({
 }) {
   return (
     <TodoForm
+      key={todo?.id ?? "new"}
       todo={todo}
       categories={categories}
       onSuccess={() => {
