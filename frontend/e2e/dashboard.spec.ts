@@ -1,12 +1,23 @@
 import { test, expect } from "@playwright/test";
 
-const DEV_EMAIL = "dev@moonsbow.com";
-const DEV_PASSWORD = "dev123";
+// E2E user registered through the real API (no dev backdoor).
+// Requires the backend running locally (docker compose up).
+const E2E_EMAIL = "e2e-test@moonsbow.local";
+const E2E_PASSWORD = "E2eTestPass123!";
+const E2E_API_URL = process.env.E2E_API_URL ?? "http://localhost:8000";
+
+async function ensureE2EUser(page: any) {
+  await page.request.post(`${E2E_API_URL}/api/v1/auth/register`, {
+    data: { email: E2E_EMAIL, password: E2E_PASSWORD },
+  });
+  // 409 Conflict (already registered) is expected on subsequent runs.
+}
 
 async function login(page: any) {
+  await ensureE2EUser(page);
   await page.goto("/login");
-  await page.fill('input[type="email"]', DEV_EMAIL);
-  await page.fill('input[type="password"]', DEV_PASSWORD);
+  await page.fill('input[type="email"]', E2E_EMAIL);
+  await page.fill('input[type="password"]', E2E_PASSWORD);
   await page.click('button[type="submit"]');
   await page.waitForURL("/");
 }

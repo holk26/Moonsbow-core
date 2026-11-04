@@ -9,3 +9,6 @@ build/
 venv/
 *.log
 .worktrees/
+.playwright-mcp/
+playwright-report/
+test-results/
